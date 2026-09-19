@@ -3,9 +3,9 @@ import { resolveTemplate, generateQuestBatch, prerequisitesMet } from './questEn
 
 const data = {
   items: [
-    { name: 'Carbon', rarity: 'common', type: 'mineral', craftable: false },
-    { name: 'Gold', rarity: 'rare', type: 'mineral', craftable: false },
-    { name: 'Living Glass', rarity: 'rare', type: 'product', craftable: true },
+    { name: 'Carbon', rarity: 'common', type: 'mineral', tags: [] },
+    { name: 'Gold', rarity: 'rare', type: 'mineral', tags: [] },
+    { name: 'Living Glass', rarity: 'rare', type: 'product', tags: ['craftable'] },
   ],
   locations: [
     { name: 'Trade Post', allowsTrade: true, hasNpcPilots: false },
@@ -27,6 +27,18 @@ describe('resolveTemplate', () => {
   it('applies boolean filters', () => {
     const result = resolveTemplate('Visit [location?allowsTrade=true]', data)
     expect(result).toBe('Visit Trade Post')
+  })
+
+  it('matches an array-valued field by membership (tags)', () => {
+    const result = resolveTemplate('Craft [item?tags=craftable]', data)
+    expect(result).toBe('Craft Living Glass')
+  })
+
+  it('does not match a tag the row does not have', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = resolveTemplate('Craft [item?tags=legendary]', data)
+    expect(result).toBe('Craft {no matching item found}')
+    warnSpy.mockRestore()
   })
 
   it('resolves numeric ranges within bounds', () => {

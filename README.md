@@ -33,11 +33,15 @@ npm test
   those facts come from and how effects get written back.
 - `src/lib/questEngine.js` is a framework agnostic, dependency free
   templating engine (pure functions, no React). It resolves placeholders
-  like `[item?type=mineral&craftable=true]`, `[location?allowsTrade=true]`,
+  like `[item?type=mineral&tags=craftable]`, `[location?allowsTrade=true]`,
   and `[10-30]` (a random integer in that range) against the data tables.
-  Each placeholder in a template is resolved independently, so two
-  `[item]` placeholders in the same template can resolve to different
-  items. If a filter matches no rows, the engine substitutes
+  When a field's value is an array (e.g. an item's `tags`), the filter
+  checks membership instead of equality, so `tags=craftable` reads as
+  "tags includes craftable" — this is how `items.json` marks which
+  items can be crafted, rather than a dedicated boolean field. Each
+  placeholder in a template is resolved independently, so two `[item]`
+  placeholders in the same template can resolve to different items. If
+  a filter matches no rows, the engine substitutes
   `{no matching item found}` and logs a console warning instead of
   crashing. `generateQuestBatch` also filters out tasks whose
   `prerequisites` don't match the current facts (via `prerequisitesMet`)

@@ -5,27 +5,12 @@
     "effects": {}
   },
   {
-    "task": "Deliver [1-3] [item?rarity=exotic] to a trader at [location?allowsTrade=true&hasNpcPilots=true]",
+    "task": "Craft [1-5] [item?tags=craftable]",
     "prerequisites": {},
     "effects": {}
   },
   {
-    "task": "Craft [1-5] [item?craftable=true]",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Scan [3-6] [item?type=curiosity] found in the wild",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Trade [item?rarity=rare] for a fair price at [location?allowsTrade=true]",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Refuel your starship with [item?type=gas] before departing [location]",
+    "task": "Scan [3-6] [item?tags=scannable] found in the wild",
     "prerequisites": {},
     "effects": {}
   },
@@ -35,17 +20,7 @@
     "effects": {}
   },
   {
-    "task": "Install a [item?type=technology] upgrade on your exosuit",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Investigate the [item?type=curiosity] reported near [location]",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Repair your starship using [1-2] [item?type=component]",
+    "task": "Install a [item?type=technology] upgrade",
     "prerequisites": {},
     "effects": {}
   },
@@ -55,12 +30,7 @@
     "effects": {}
   },
   {
-    "task": "Stockpile [15-40] units of [item?type=product] for a future trade route",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Recover [1-2] [item?rarity=exotic] from [location]",
+    "task": "Recover [1-2] [item?rarity=exotic]",
     "prerequisites": {},
     "effects": {}
   },
@@ -70,33 +40,17 @@
     "effects": {}
   },
   {
-    "task": "Exchange [item?rarity=uncommon] for local currency at [location?allowsTrade=true]",
+    "task": "Go to [location]",
     "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Explore [location] and log any points of interest",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Assemble [1-4] [item?type=component] into a working module",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Escort a freighter carrying [item?rarity=rare] to [location?allowsTrade=true]",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Repair your freighter's hyperdrive using [1-2] [item?type=component]",
-    "prerequisites": { "hasFreighter": true },
     "effects": {}
   },
   {
     "task": "Requisition a starter freighter from a fleet commander at [location?allowsTrade=true&hasNpcPilots=true]",
     "prerequisites": { "hasFreighter": false },
     "effects": { "hasFreighter": true }
+  },
+  {
+    "task": "Summon your freighter",
+    "prerequisites": { "hasFreighter": true }
   }
 ]

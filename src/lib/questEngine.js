@@ -21,7 +21,7 @@ function coerceFilterValue(rawValue) {
 }
 
 /**
- * Parses a query string like "type=mineral&craftable=true" into a plain
+ * Parses a query string like "type=mineral&tags=craftable" into a plain
  * object of { field: value } pairs, lower-casing field names so lookups
  * are case insensitive.
  */
@@ -40,8 +40,11 @@ function parseFilters(queryString) {
 
 /**
  * Returns true if `row` matches every field/value pair in `filters`,
- * comparing field names case insensitively and values loosely (a string
- * filter value matches a string field's value case insensitively).
+ * comparing field names case insensitively. A string filter value
+ * matches a string field's value case insensitively; when the field's
+ * actual value is an array (e.g. a "tags" list), the filter instead
+ * checks that the array contains a matching entry, so
+ * "tags=craftable" reads as "tags includes craftable".
  */
 function rowMatchesFilters(row, filters) {
   return Object.entries(filters).every(([field, expected]) => {
@@ -50,6 +53,10 @@ function rowMatchesFilters(row, filters) {
     )
     if (!actualEntry) return false
     const actual = actualEntry[1]
+
+    if (Array.isArray(actual)) {
+      return actual.some((tag) => String(tag).toLowerCase() === String(expected).toLowerCase())
+    }
 
     if (typeof expected === 'boolean' || typeof actual === 'boolean') {
       return actual === expected
