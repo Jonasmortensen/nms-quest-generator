@@ -18,8 +18,14 @@ npm test
 
 ## How it works
 
-- `src/data/*.json` holds the raw data tables: items, locations, and task
-  templates.
+- `src/data/items.json` and `src/data/locations.json` are the raw data
+  tables used to resolve placeholders.
+- `src/data/tasks.json` is the pool of task templates. Each entry is
+  `{ "task": "<template string>", "prerequisites": { ... } }`.
+  `prerequisites` is a plain object of fact name to required value (e.g.
+  `{ "hasFreighter": true }`); an empty object means the task has no
+  restrictions and is always eligible. See "Task prerequisites &
+  Save Info" below for where those facts come from.
 - `src/lib/questEngine.js` is a framework agnostic, dependency free
   templating engine (pure functions, no React). It resolves placeholders
   like `[item?type=mineral&craftable=true]`, `[location?allowsTrade=true]`,
@@ -28,14 +34,64 @@ npm test
   `[item]` placeholders in the same template can resolve to different
   items. If a filter matches no rows, the engine substitutes
   `{no matching item found}` and logs a console warning instead of
-  crashing.
+  crashing. `generateQuestBatch` also filters out tasks whose
+  `prerequisites` don't match the current facts (via `prerequisitesMet`)
+  before picking from the remaining eligible pool.
 - `src/hooks/useQuestGenerator.js` wraps the engine in a hook that holds
-  a batch of 5 quests in state and exposes `regenerate()`.
-- `src/components/QuestList.jsx` and `QuestCard.jsx` render the batch,
-  each `QuestCard` showing a single resolved objective.
+  a batch of 5 quests in state and exposes `regenerate()`. It takes the
+  current facts as an argument so regenerating always respects the
+  latest Save Info answers. It also tracks progress through the batch as
+  a single `activeIndex`: objectives are completed strictly in order
+  (top to bottom), so that one number is enough to derive every card's
+  status — everything before it is completed, the one at it is active,
+  everything after it is upcoming.
+- `src/components/QuestList.jsx` and `QuestCard.jsx` render the batch in
+  order. The active objective is highlighted yellow with a "Complete"
+  button (advances `activeIndex`); completed ones are green with a
+  "Play From Here" button (rewinds `activeIndex` back to that objective,
+  un-completing everything after it); the rest are dimmed grey.
 
 Because the engine has no React dependency, it can be unit tested in
 isolation (see `src/lib/questEngine.test.js`) or reused outside this UI.
+
+## Pages & navigation
+
+The app has two pages, switched with `react-router-dom`'s `HashRouter`
+(chosen so GitHub Pages doesn't need a server rewrite rule for deep
+links — `#/save-info` never leaves `index.html`):
+
+- **Quest Generator** (`src/pages/QuestGeneratorPage.jsx`) — the
+  objective batch, the narrative prompt form, and the copy button.
+- **Save Info** (`src/pages/SaveInfoPage.jsx`) — a form of persistent
+  facts about the player's save (see below).
+
+Both pages share `src/components/QuestionForm.jsx`, a generic
+questions-as-radio-buttons renderer driven by a `{ id, question,
+options }[]` array; it doesn't know or care whether its answers are
+persisted or session-only.
+
+## Task prerequisites & Save Info
+
+`src/data/saveInfoQuestions.json` is the pool of questions on the Save
+Info page, e.g. `{ "id": "hasFreighter", "question": "Do you own a
+freighter?", "options": ["Yes", "No"] }`. Add more by appending to this
+array the same way as `promptQuestions.json`.
+
+- `src/hooks/usePersistedAnswers.js` is like `usePromptAnswers` but
+  reads/writes its answers to `localStorage`, so they survive reloads
+  and future visits instead of resetting each session.
+- `src/lib/saveInfo.js` (`answersToFacts`) converts those answers into a
+  flat facts object for the engine: a Yes/No question becomes a boolean
+  keyed by its `id` (e.g. `{ hasFreighter: true }`); any other question
+  is passed through as its raw string answer. This is what a task's
+  `prerequisites` object is checked against.
+- `QuestGeneratorPage` reads the same persisted answers, converts them
+  with `answersToFacts`, and passes the result into `useQuestGenerator`
+  so only eligible tasks are ever picked.
+
+To add a new gated task, give it a `prerequisites` entry keyed by a
+Save Info question's `id`, e.g. `{ "hasFreighter": true }` for a task
+that should only appear once the player owns a freighter.
 
 ## Sending objectives to an LLM
 
@@ -51,9 +107,10 @@ narrative with flavor text before, between, and after each objective.
   each one gets its own set of radio buttons and, unless answered,
   defaults to its first option.
 - `src/hooks/usePromptAnswers.js` holds the current answer to each
-  question in state.
-- `src/components/PromptQuestionForm.jsx` renders the pooled questions
-  as radio button groups.
+  question in state (session-only; see Save Info below for the
+  persisted variant).
+- `src/components/QuestionForm.jsx` renders the pooled questions as
+  radio button groups.
 - `src/data/promptTemplate.json` holds the wrapping prompt text as a
   template string with `{{count}}`, `{{context}}`, and `{{objectives}}`
   placeholders.

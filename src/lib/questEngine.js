@@ -119,16 +119,34 @@ export function resolveTemplate(template, data) {
 }
 
 /**
- * Picks `count` task templates at random (repeats allowed) and resolves
- * each one independently against `data`.
+ * Returns true if every key/value pair in `prerequisites` matches the
+ * given `facts` (e.g. { hasFreighter: true }). A task with no
+ * prerequisites, or an empty prerequisites object, is always eligible.
  */
-export function generateQuestBatch(tasks, data, count = 5) {
+export function prerequisitesMet(prerequisites, facts = {}) {
+  if (!prerequisites) return true
+  return Object.entries(prerequisites).every(([key, expected]) => facts[key] === expected)
+}
+
+/**
+ * Picks `count` task definitions ({ task, prerequisites }) at random
+ * (repeats allowed) from those whose prerequisites are met by `facts`,
+ * and resolves each chosen template independently against `data`.
+ */
+export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
+  const eligibleTasks = tasks.filter((taskDef) => prerequisitesMet(taskDef.prerequisites, facts))
+
+  if (eligibleTasks.length === 0) {
+    console.warn('questEngine: no tasks match the current prerequisites/facts')
+    return []
+  }
+
   const batch = []
   for (let i = 0; i < count; i++) {
-    const template = tasks[Math.floor(Math.random() * tasks.length)]
+    const taskDef = eligibleTasks[Math.floor(Math.random() * eligibleTasks.length)]
     batch.push({
       id: `${Date.now()}-${i}-${Math.floor(Math.random() * 1e6)}`,
-      text: resolveTemplate(template, data),
+      text: resolveTemplate(taskDef.task, data),
     })
   }
   return batch

@@ -6,6 +6,9 @@
   --text-muted: #94a3b8;
   --accent: #ff8c3d;
   --accent-alt: #38e0d8;
+  --status-active: #eab308;
+  --status-completed: #22c55e;
+  --status-upcoming: #475569;
   color-scheme: dark;
 }
 
@@ -62,11 +65,38 @@ body {
   color: transparent;
 }
 
+.app__nav {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.app__nav-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+}
+
+.app__nav-link:hover {
+  color: var(--text);
+}
+
+.app__nav-link--active {
+  color: var(--accent-alt);
+  border-bottom-color: var(--accent-alt);
+}
+
 .app__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
+  margin-bottom: 24px;
 }
 
 .app__regenerate,
@@ -108,30 +138,86 @@ body {
 }
 
 .quest-list {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-}
-
-@media (min-width: 560px) {
-  .quest-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 .quest-card {
   min-width: 0;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent-alt);
+  border-left: 3px solid var(--status-upcoming);
   border-radius: 8px;
   padding: 16px 18px;
   overflow-wrap: break-word;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .quest-card__objective {
   margin: 0;
   line-height: 1.5;
+}
+
+.quest-card--upcoming {
+  border-left-color: var(--status-upcoming);
+  opacity: 0.7;
+}
+
+.quest-card--active {
+  border-left-color: var(--status-active);
+  background: rgba(234, 179, 8, 0.08);
+}
+
+.quest-card--active .quest-card__objective {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.quest-card--completed {
+  border-left-color: var(--status-completed);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.quest-card--completed .quest-card__objective {
+  color: var(--text-muted);
+}
+
+.quest-card__action {
+  appearance: none;
+  margin-top: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.quest-card__action:active {
+  transform: scale(0.97);
+}
+
+.quest-card--active .quest-card__action {
+  border: 1px solid var(--status-active);
+  background: rgba(234, 179, 8, 0.15);
+  color: var(--status-active);
+}
+
+.quest-card--active .quest-card__action:hover {
+  background: rgba(234, 179, 8, 0.25);
+}
+
+.quest-card--completed .quest-card__action {
+  border: 1px solid var(--status-completed);
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--status-completed);
+}
+
+.quest-card--completed .quest-card__action:hover {
+  background: rgba(34, 197, 94, 0.25);
 }
 
 .prompt-section {
@@ -145,7 +231,7 @@ body {
   text-align: center;
 }
 
-.prompt-section h2 {
+.section-heading {
   margin: 0;
   font-size: 0.85rem;
   font-weight: 700;
@@ -154,35 +240,35 @@ body {
   color: var(--accent-alt);
 }
 
-.prompt-form {
+.question-form {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.prompt-form__question {
+.question-form__question {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 16px;
   text-align: left;
 }
 
-.prompt-form__question legend {
+.question-form__question legend {
   padding: 0 6px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted);
 }
 
-.prompt-form__options {
+.question-form__options {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 20px;
   margin-top: 8px;
 }
 
-.prompt-form__option {
+.question-form__option {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -190,6 +276,20 @@ body {
   cursor: pointer;
 }
 
-.prompt-form__option input {
+.question-form__option input {
   accent-color: var(--accent-alt);
+}
+
+.save-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.save-info__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }

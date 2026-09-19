@@ -1,20 +1,82 @@
 [
-  "Sell [10-30] units of [item?type=mineral] at [location?allowsTrade=true]",
-  "Deliver [1-3] [item?rarity=exotic] to a trader at [location?allowsTrade=true&hasNpcPilots=true]",
-  "Craft [1-5] [item?craftable=true] using your portable technology",
-  "Scan [3-6] [item?type=curiosity] found in the wild",
-  "Trade [item?rarity=rare] for a fair price at [location?allowsTrade=true]",
-  "Refuel your starship with [item?type=gas] before departing [location]",
-  "Collect [20-50] units of [item?type=mineral] from a nearby deposit",
-  "Install a [item?type=technology] upgrade on your exosuit",
-  "Investigate the [item?type=curiosity] reported near [location]",
-  "Repair your starship using [1-2] [item?type=component]",
-  "Visit [location?hasNpcPilots=true] and speak with a visiting pilot",
-  "Stockpile [15-40] units of [item?type=product] for a future trade route",
-  "Recover [1-2] [item?rarity=exotic] from [location]",
-  "Bring [item?type=technology] to an engineer stationed at [location?allowsTrade=true]",
-  "Exchange [item?rarity=uncommon] for local currency at [location?allowsTrade=true]",
-  "Explore [location] and log any points of interest",
-  "Assemble [1-4] [item?type=component] into a working module",
-  "Escort a freighter carrying [item?rarity=rare] to [location?allowsTrade=true]"
+  {
+    "task": "Sell [10-30] units of [item?type=mineral] at [location?allowsTrade=true]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Deliver [1-3] [item?rarity=exotic] to a trader at [location?allowsTrade=true&hasNpcPilots=true]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Craft [1-5] [item?craftable=true]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Scan [3-6] [item?type=curiosity] found in the wild",
+    "prerequisites": {}
+  },
+  {
+    "task": "Trade [item?rarity=rare] for a fair price at [location?allowsTrade=true]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Refuel your starship with [item?type=gas] before departing [location]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Collect [20-50] units of [item?type=mineral] from a nearby deposit",
+    "prerequisites": {}
+  },
+  {
+    "task": "Install a [item?type=technology] upgrade on your exosuit",
+    "prerequisites": {}
+  },
+  {
+    "task": "Investigate the [item?type=curiosity] reported near [location]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Repair your starship using [1-2] [item?type=component]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Visit [location?hasNpcPilots=true] and speak with a visiting pilot",
+    "prerequisites": {}
+  },
+  {
+    "task": "Stockpile [15-40] units of [item?type=product] for a future trade route",
+    "prerequisites": {}
+  },
+  {
+    "task": "Recover [1-2] [item?rarity=exotic] from [location]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Bring [item?type=technology] to an engineer stationed at [location?allowsTrade=true]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Exchange [item?rarity=uncommon] for local currency at [location?allowsTrade=true]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Explore [location] and log any points of interest",
+    "prerequisites": {}
+  },
+  {
+    "task": "Assemble [1-4] [item?type=component] into a working module",
+    "prerequisites": {}
+  },
+  {
+    "task": "Escort a freighter carrying [item?rarity=rare] to [location?allowsTrade=true]",
+    "prerequisites": {}
+  },
+  {
+    "task": "Repair your freighter's hyperdrive using [1-2] [item?type=component]",
+    "prerequisites": { "hasFreighter": true }
+  },
+  {
+    "task": "Requisition a starter freighter from a fleet commander at [location?allowsTrade=true&hasNpcPilots=true]",
+    "prerequisites": { "hasFreighter": false }
+  }
 ]

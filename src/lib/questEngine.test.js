@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { resolveTemplate, generateQuestBatch } from './questEngine.js'
+import { resolveTemplate, generateQuestBatch, prerequisitesMet } from './questEngine.js'
 
 const data = {
   items: [
@@ -52,8 +52,30 @@ describe('resolveTemplate', () => {
   })
 })
 
+describe('prerequisitesMet', () => {
+  it('is true for missing or empty prerequisites', () => {
+    expect(prerequisitesMet(undefined, {})).toBe(true)
+    expect(prerequisitesMet({}, { hasFreighter: false })).toBe(true)
+  })
+
+  it('is true only when every fact matches', () => {
+    expect(prerequisitesMet({ hasFreighter: true }, { hasFreighter: true })).toBe(true)
+    expect(prerequisitesMet({ hasFreighter: true }, { hasFreighter: false })).toBe(false)
+    expect(prerequisitesMet({ hasFreighter: true }, {})).toBe(false)
+  })
+
+  it('requires all keys to match when there are several', () => {
+    const prerequisites = { hasFreighter: true, hasShip: true }
+    expect(prerequisitesMet(prerequisites, { hasFreighter: true, hasShip: true })).toBe(true)
+    expect(prerequisitesMet(prerequisites, { hasFreighter: true, hasShip: false })).toBe(false)
+  })
+})
+
 describe('generateQuestBatch', () => {
-  const tasks = ['Visit [location]', 'Sell [item]']
+  const tasks = [
+    { task: 'Visit [location]', prerequisites: {} },
+    { task: 'Sell [item]', prerequisites: {} },
+  ]
 
   it('generates the requested number of quests', () => {
     const batch = generateQuestBatch(tasks, data, 5)
@@ -63,5 +85,25 @@ describe('generateQuestBatch', () => {
       expect(quest.text.length).toBeGreaterThan(0)
       expect(quest.id).toBeDefined()
     })
+  })
+
+  it('only picks tasks whose prerequisites match the given facts', () => {
+    const gatedTasks = [
+      { task: 'Visit [location]', prerequisites: {} },
+      { task: 'Sell [item]', prerequisites: { hasFreighter: true } },
+    ]
+    const batch = generateQuestBatch(gatedTasks, data, 10, { hasFreighter: false })
+    batch.forEach((quest) => {
+      expect(quest.text.startsWith('Visit')).toBe(true)
+    })
+  })
+
+  it('returns an empty batch and warns when no tasks are eligible', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const gatedTasks = [{ task: 'Sell [item]', prerequisites: { hasFreighter: true } }]
+    const batch = generateQuestBatch(gatedTasks, data, 5, { hasFreighter: false })
+    expect(batch).toEqual([])
+    expect(warnSpy).toHaveBeenCalled()
+    warnSpy.mockRestore()
   })
 })

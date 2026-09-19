@@ -1,12 +1,12 @@
-export function PromptQuestionForm({ questions, answers, onAnswerChange }) {
+export function QuestionForm({ questions, answers, onAnswerChange }) {
   return (
-    <form className="prompt-form" onSubmit={(event) => event.preventDefault()}>
+    <form className="question-form" onSubmit={(event) => event.preventDefault()}>
       {questions.map((question) => (
-        <fieldset className="prompt-form__question" key={question.id}>
+        <fieldset className="question-form__question" key={question.id}>
           <legend>{question.question}</legend>
-          <div className="prompt-form__options">
+          <div className="question-form__options">
             {question.options.map((option) => (
-              <label className="prompt-form__option" key={option}>
+              <label className="question-form__option" key={option}>
                 <input
                   type="radio"
                   name={question.id}
