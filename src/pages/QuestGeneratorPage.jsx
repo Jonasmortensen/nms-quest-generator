@@ -1,30 +1,31 @@
+import { useState } from 'react'
 import { QuestList } from '../components/QuestList.jsx'
 import { QuestionForm } from '../components/QuestionForm.jsx'
 import { CopyPromptButton } from '../components/CopyPromptButton.jsx'
+import { DebugStatePanel } from '../components/DebugStatePanel.jsx'
 import { useQuestGenerator } from '../hooks/useQuestGenerator.js'
 import { usePromptAnswers } from '../hooks/usePromptAnswers.js'
-import { usePersistedAnswers } from '../hooks/usePersistedAnswers.js'
+import { usePlayerState } from '../hooks/usePlayerState.js'
 import { buildNarrativePrompt, formatAnswers } from '../lib/promptBuilder.js'
-import { answersToFacts, factsToAnswers, SAVE_INFO_STORAGE_KEY } from '../lib/saveInfo.js'
+import { PLAYER_STATE_STORAGE_KEY } from '../lib/playerState.js'
 import promptTemplate from '../data/promptTemplate.json'
 import promptQuestions from '../data/promptQuestions.json'
-import saveInfoQuestions from '../data/saveInfoQuestions.json'
+import playerStateSchema from '../data/playerStateSchema.json'
 
 export function QuestGeneratorPage() {
-  const { answers: saveInfoAnswers, setAnswer: setSaveInfoAnswer } = usePersistedAnswers(
-    saveInfoQuestions,
-    SAVE_INFO_STORAGE_KEY
+  const { state: playerState, setValue: setPlayerStateValue } = usePlayerState(
+    playerStateSchema,
+    PLAYER_STATE_STORAGE_KEY
   )
-  const facts = answersToFacts(saveInfoQuestions, saveInfoAnswers)
-  const { quests, activeIndex, regenerate, completeActive, playFromHere } = useQuestGenerator(facts)
+  const { quests, activeIndex, regenerate, completeActive, playFromHere } = useQuestGenerator(playerState)
   const { answers, setAnswer } = usePromptAnswers(promptQuestions)
+  const [showDebug, setShowDebug] = useState(false)
 
   function handleComplete() {
     const activeQuest = quests[activeIndex]
     if (activeQuest) {
-      const updatedAnswers = factsToAnswers(saveInfoQuestions, activeQuest.effects)
-      Object.entries(updatedAnswers).forEach(([questionId, answer]) => {
-        setSaveInfoAnswer(questionId, answer)
+      Object.entries(activeQuest.effects).forEach(([id, value]) => {
+        setPlayerStateValue(id, value)
       })
     }
     completeActive()
@@ -32,6 +33,18 @@ export function QuestGeneratorPage() {
 
   return (
     <>
+      <div className="debug-toggle-row">
+        <button
+          type="button"
+          className="debug-toggle"
+          onClick={() => setShowDebug((prev) => !prev)}
+        >
+          {showDebug ? 'Hide Debug State' : 'Show Debug State'}
+        </button>
+      </div>
+
+      {showDebug && <DebugStatePanel state={playerState} />}
+
       <div className="app__actions">
         <button type="button" className="app__regenerate" onClick={regenerate}>
           Generate 5 New

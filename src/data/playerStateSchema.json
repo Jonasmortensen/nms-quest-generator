@@ -1,0 +1,14 @@
+[
+  {
+    "id": "hasFreighter",
+    "default": false,
+    "formQuestion": {
+      "label": "Do you own a freighter?",
+      "options": ["Yes", "No"]
+    }
+  },
+  {
+    "id": "currentLocation",
+    "default": "Unknown"
+  }
+]

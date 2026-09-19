@@ -140,9 +140,9 @@ export function prerequisitesMet(prerequisites, facts = {}) {
  * random (repeats allowed) from those whose prerequisites are met by
  * `facts`, and resolves each chosen template independently against
  * `data`. Each resolved quest carries its task's `effects` through
- * unresolved (see src/lib/saveInfo.js): the facts a caller should apply
- * to Save Info once that objective is completed. A task with no effects
- * carries an empty object, never undefined.
+ * unresolved (see src/lib/playerState.js): the facts a caller should
+ * apply to player state once that objective is completed. A task with
+ * no effects carries an empty object, never undefined.
  */
 export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
   const eligibleTasks = tasks.filter((taskDef) => prerequisitesMet(taskDef.prerequisites, facts))

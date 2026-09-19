@@ -13,16 +13,16 @@ function isValidBatch(value) {
   return Boolean(value) && Array.isArray(value.quests) && typeof value.activeIndex === 'number'
 }
 
-function freshBatch(facts) {
-  return { quests: generateQuestBatch(tasks, data, BATCH_SIZE, facts), activeIndex: 0 }
+function freshBatch(playerState) {
+  return { quests: generateQuestBatch(tasks, data, BATCH_SIZE, playerState), activeIndex: 0 }
 }
 
 /**
  * Wraps the quest engine in a small hook: holds the current batch of
  * quests and progress through it in state, persisted to localStorage so
  * a page reload (or navigating away and back) keeps the same batch and
- * progress. Only regenerate() replaces the batch. `facts` (see
- * src/lib/saveInfo.js) gates which tasks are eligible via their
+ * progress. Only regenerate() replaces the batch. `playerState` (see
+ * src/lib/playerState.js) gates which tasks are eligible via their
  * prerequisites, and is only consulted when a new batch is generated.
  *
  * Progress is tracked as a single `activeIndex`: objectives before it
@@ -30,10 +30,10 @@ function freshBatch(facts) {
  * upcoming. Objectives are completed strictly in order, so this one
  * number is enough to derive every card's status.
  */
-export function useQuestGenerator(facts = {}) {
+export function useQuestGenerator(playerState = {}) {
   const [batch, setBatch] = useState(() => {
     const persisted = readJSON(STORAGE_KEY, null)
-    return isValidBatch(persisted) ? persisted : freshBatch(facts)
+    return isValidBatch(persisted) ? persisted : freshBatch(playerState)
   })
 
   useEffect(() => {
@@ -41,8 +41,8 @@ export function useQuestGenerator(facts = {}) {
   }, [batch])
 
   const regenerate = useCallback(() => {
-    setBatch(freshBatch(facts))
-  }, [facts])
+    setBatch(freshBatch(playerState))
+  }, [playerState])
 
   const completeActive = useCallback(() => {
     setBatch((prev) => ({
@@ -51,10 +51,10 @@ export function useQuestGenerator(facts = {}) {
     }))
   }, [])
 
-  // TODO: rewinding does not undo Save Info changes made by completed
+  // TODO: rewinding does not undo player state changes made by completed
   // objectives' `effects` (see QuestGeneratorPage.handleComplete). To
-  // support that, we'd need to snapshot the facts (or just the prior
-  // value of each overwritten key) alongside each quest when it's
+  // support that, we'd need to snapshot the player state (or just the
+  // prior value of each overwritten key) alongside each quest when it's
   // completed, then replay the inverse for every completed objective
   // from the end of the batch back down to `index` here.
   const playFromHere = useCallback((index) => {

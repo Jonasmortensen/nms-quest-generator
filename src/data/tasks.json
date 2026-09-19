@@ -42,7 +42,7 @@
   {
     "task": "Go to [location]",
     "prerequisites": {},
-    "effects": {}
+    "effects": {"currentLocation" : "[location]"}
   },
   {
     "task": "Requisition a starter freighter from a fleet commander at [location?allowsTrade=true&hasNpcPilots=true]",
@@ -50,7 +50,8 @@
     "effects": { "hasFreighter": true }
   },
   {
-    "task": "Summon your freighter",
-    "prerequisites": { "hasFreighter": true }
+    "task": "Go to your freighter",
+    "prerequisites": { "hasFreighter": true },
+    "effects": {"currentLocation": "freighter"}
   }
 ]

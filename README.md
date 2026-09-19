@@ -22,15 +22,15 @@ npm test
   tables used to resolve placeholders.
 - `src/data/tasks.json` is the pool of task templates. Each entry is
   `{ "task": "<template string>", "prerequisites": { ... }, "effects":
-  { ... } }`. Both `prerequisites` and `effects` are plain objects of
-  fact name to value, keyed the same way as Save Info's facts (e.g.
-  `{ "hasFreighter": true }`); an empty object means "no restriction" /
-  "no change". `prerequisites` gates whether the task can be picked;
-  `effects` are the facts applied to Save Info once the objective is
-  marked complete — e.g. a "requisition a freighter" task can have
-  `"effects": { "hasFreighter": true }` to update Save Info the moment
-  it's completed. See "Task prerequisites & Save Info" below for where
-  those facts come from and how effects get written back.
+  { ... } }`. Both `prerequisites` and `effects` are plain objects keyed
+  by a player state schema entry's `id` (e.g. `{ "hasFreighter": true }`);
+  an empty object means "no restriction" / "no change". `prerequisites`
+  gates whether the task can be picked; `effects` are applied to player
+  state once the objective is marked complete — e.g. a "requisition a
+  freighter" task can have `"effects": { "hasFreighter": true }` to
+  update player state the moment it's completed. See "Task
+  prerequisites, effects & player state" below for where that state
+  comes from and how effects get written back.
 - `src/lib/questEngine.js` is a framework agnostic, dependency free
   templating engine (pure functions, no React). It resolves placeholders
   like `[item?type=mineral&tags=craftable]`, `[location?allowsTrade=true]`,
@@ -51,8 +51,8 @@ npm test
   concrete typed values, not templates to resolve.
 - `src/hooks/useQuestGenerator.js` wraps the engine in a hook that holds
   a batch of 5 quests in state and exposes `regenerate()`. It takes the
-  current facts as an argument so regenerating always respects the
-  latest Save Info answers. It also tracks progress through the batch as
+  current player state as an argument so regenerating always respects
+  its latest values. It also tracks progress through the batch as
   a single `activeIndex`: objectives are completed strictly in order
   (top to bottom), so that one number is enough to derive every card's
   status — everything before it is completed, the one at it is active,
@@ -85,60 +85,76 @@ questions-as-radio-buttons renderer driven by a `{ id, question,
 options }[]` array; it doesn't know or care whether its answers are
 persisted or session-only.
 
-## Task prerequisites, effects & Save Info
+## Task prerequisites, effects & player state
 
-`src/data/saveInfoQuestions.json` is the pool of questions on the Save
-Info page, e.g. `{ "id": "hasFreighter", "question": "Do you own a
-freighter?", "options": ["Yes", "No"] }`. Add more by appending to this
-array the same way as `promptQuestions.json`.
+`src/data/playerStateSchema.json` describes every piece of persisted
+player state as `{ id, default, formQuestion? }`, e.g.:
 
-Save Info exists in two representations, and `src/lib/saveInfo.js` is
-the single place that converts between them so the rest of the app
-never has to:
+```json
+[
+  {
+    "id": "hasFreighter",
+    "default": false,
+    "formQuestion": { "label": "Do you own a freighter?", "options": ["Yes", "No"] }
+  },
+  { "id": "currentLocation", "default": "Unknown" }
+]
+```
 
-- **Answers** — the readable, labelled form shown in the UI and
-  persisted to `localStorage`, keyed by question id (e.g.
-  `{ hasFreighter: "Yes" }`). This is what `QuestionForm.jsx` reads and
-  writes.
-- **Facts** — the flat, typed form the engine works with, also keyed by
-  question id (e.g. `{ hasFreighter: true }`). This is what a task's
-  `prerequisites` and `effects` are expressed in.
+`default` is already typed (a boolean, a string, ...) — that typed
+value is the canonical form the persisted player state is stored in,
+and it's exactly what a task's `prerequisites` and `effects` are
+expressed in, so the quest engine needs no conversion at all. An entry
+with a `formQuestion` shows up as a radio-button question on the Save
+Info page; an entry without one (like `currentLocation` above) is
+hidden from the form entirely and can only ever be changed by a task's
+`effects`.
 
-The conversions:
+The only place a readable, labelled form (e.g. "Yes"/"No") exists is at
+the Save Info form's boundary, and `src/lib/playerState.js` is the
+single place that translates between it and the typed state:
 
-- `answersToFacts(questions, answers)` — answers → facts. A Yes/No
-  question becomes a boolean; any other question passes through as its
-  raw string answer.
-- `valueToAnswer(question, value)` — the inverse for one question: turns
-  a typed value back into the exact label from that question's
-  `options` (matched case-insensitively, so it round-trips regardless of
-  how the options were capitalized in the JSON).
-- `factsToAnswers(questions, facts)` — applies `valueToAnswer` across a
-  partial facts object (e.g. a task's `effects`), so unrelated answers
-  are left untouched.
-- `applyEffects(facts, effects)` — merges a task's effects onto an
-  existing facts object (effects win).
+- `schemaToFormQuestions(schema)` — renders the entries that have a
+  `formQuestion` into the `{ id, question, options }` shape
+  `QuestionForm.jsx` expects; entries without one are omitted.
+- `valueToLabel(entry, value)` / `labelToValue(entry, label)` — convert
+  one entry's typed value to/from its form label. Boolean entries
+  round-trip through a Yes/No-style label (matched case-insensitively,
+  so it works regardless of how the options were capitalized); any
+  other entry's label is its value.
+- `stateToFormAnswers(schema, state)` / `formAnswerToValue(schema, id,
+  label)` — apply the above across the whole persisted state, for
+  populating and updating the form.
 
 Wiring:
 
-- `src/hooks/usePersistedAnswers.js` is like `usePromptAnswers` but
-  reads/writes its answers to `localStorage`, so they survive reloads
-  and future visits instead of resetting each session.
-- `QuestGeneratorPage` reads the persisted answers, converts them with
-  `answersToFacts`, and passes the result into `useQuestGenerator` so
-  only eligible tasks are ever picked.
+- `src/hooks/usePlayerState.js` persists the typed state object to
+  `localStorage`, defaulting every entry from its schema `default`, so
+  it survives reloads and future visits instead of resetting each
+  session.
+- `QuestGeneratorPage` reads that state directly and passes it into
+  `useQuestGenerator` so only tasks whose `prerequisites` match are ever
+  picked.
 - When the active objective is marked complete, `QuestGeneratorPage`
-  converts that quest's `effects` back into answers with
-  `factsToAnswers` and writes each one via `usePersistedAnswers`'
-  `setAnswer`, so Save Info (and the form on the Save Info page) update
-  immediately to reflect what just happened in the fiction.
+  applies that quest's `effects` straight onto the player state (no
+  label conversion needed, since effects are already typed), so Save
+  Info — and the form on the Save Info page — update immediately to
+  reflect what just happened in the fiction.
+
+The top of the Quest Generator page also has a "Show Debug State"
+toggle (`src/components/DebugStatePanel.jsx`) that dumps the full
+persisted player state object as raw key/value pairs — including
+entries with no `formQuestion` (like `currentLocation`), which the Save
+Info form itself never shows. It's off by default, and lives here
+rather than on the Save Info page so you can watch state change live as
+`effects` are applied while completing objectives.
 
 To add a new gated task, give it a `prerequisites` entry keyed by a
-Save Info question's `id`, e.g. `{ "hasFreighter": true }` for a task
-that should only appear once the player owns a freighter. To make a
-task change Save Info when completed, give it an `effects` entry the
-same way, e.g. `{ "hasFreighter": true }` on a "requisition a freighter"
-task.
+player state schema entry's `id`, e.g. `{ "hasFreighter": true }` for a
+task that should only appear once the player owns a freighter. To make
+a task change player state when completed, give it an `effects` entry
+the same way, e.g. `{ "hasFreighter": true }` on a "requisition a
+freighter" task.
 
 ## Sending objectives to an LLM
 
@@ -222,8 +238,8 @@ The engine is intentionally small and isolated so it's easy to grow:
   React or component state
 
 **Known gap (TODO):** "Play From Here" rewinds `activeIndex` but does not
-undo Save Info changes made by the `effects` of the objectives it
+undo player state changes made by the `effects` of the objectives it
 un-completes (see the TODO comment on `playFromHere` in
-`useQuestGenerator.js`). Fixing this needs a snapshot of the facts (or
+`useQuestGenerator.js`). Fixing this needs a snapshot of the state (or
 just the prior value of each overwritten key) taken alongside each quest
 when it's completed, then replayed in reverse down to the rewind point.

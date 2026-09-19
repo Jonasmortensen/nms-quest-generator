@@ -1,10 +1,21 @@
 import { QuestionForm } from '../components/QuestionForm.jsx'
-import { usePersistedAnswers } from '../hooks/usePersistedAnswers.js'
-import { SAVE_INFO_STORAGE_KEY } from '../lib/saveInfo.js'
-import saveInfoQuestions from '../data/saveInfoQuestions.json'
+import { usePlayerState } from '../hooks/usePlayerState.js'
+import {
+  schemaToFormQuestions,
+  stateToFormAnswers,
+  formAnswerToValue,
+  PLAYER_STATE_STORAGE_KEY,
+} from '../lib/playerState.js'
+import playerStateSchema from '../data/playerStateSchema.json'
 
 export function SaveInfoPage() {
-  const { answers, setAnswer } = usePersistedAnswers(saveInfoQuestions, SAVE_INFO_STORAGE_KEY)
+  const { state, setValue } = usePlayerState(playerStateSchema, PLAYER_STATE_STORAGE_KEY)
+  const formQuestions = schemaToFormQuestions(playerStateSchema)
+  const answers = stateToFormAnswers(playerStateSchema, state)
+
+  function handleAnswerChange(id, label) {
+    setValue(id, formAnswerToValue(playerStateSchema, id, label))
+  }
 
   return (
     <section className="save-info">
@@ -12,11 +23,7 @@ export function SaveInfoPage() {
       <p className="save-info__hint">
         Saved on this device and remembered between visits.
       </p>
-      <QuestionForm
-        questions={saveInfoQuestions}
-        answers={answers}
-        onAnswerChange={setAnswer}
-      />
+      <QuestionForm questions={formQuestions} answers={answers} onAnswerChange={handleAnswerChange} />
     </section>
   )
 }

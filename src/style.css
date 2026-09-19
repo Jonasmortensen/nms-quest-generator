@@ -305,3 +305,68 @@ body {
   font-size: 0.9rem;
   color: var(--text-muted);
 }
+
+.debug-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.debug-toggle {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.debug-toggle:hover {
+  color: var(--accent-alt);
+}
+
+.debug-panel {
+  width: 100%;
+  margin-bottom: 24px;
+  background: #05070c;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: left;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.debug-panel__list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.debug-panel__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.debug-panel__row dt {
+  color: var(--text-muted);
+}
+
+.debug-panel__row dd {
+  margin: 0;
+  color: var(--accent-alt);
+  word-break: break-word;
+}
+
+.debug-panel__empty {
+  margin: 0;
+  color: var(--text-muted);
+}
