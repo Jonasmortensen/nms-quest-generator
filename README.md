@@ -39,16 +39,29 @@ isolation (see `src/lib/questEngine.test.js`) or reused outside this UI.
 
 ## Sending objectives to an LLM
 
-The "Copy AI Prompt" button copies the current batch of 5 objectives to
-the clipboard, wrapped in instructions asking an LLM to weave them into
-a single chronological narrative with flavor text before, between, and
-after each objective.
+Below the generated objectives is a "Narrate this questline" section with
+a short multiple choice form, followed by a "Copy AI Prompt" button. The
+button copies the current batch of 5 objectives to the clipboard, wrapped
+in instructions asking an LLM to weave them into a single chronological
+narrative with flavor text before, between, and after each objective.
 
+- `src/data/promptQuestions.json` is the pool of setup questions shown
+  in the form, e.g. `{ "id": "location", "question": "Where are you?",
+  "options": [...] }`. Add more questions by appending to this array;
+  each one gets its own set of radio buttons and, unless answered,
+  defaults to its first option.
+- `src/hooks/usePromptAnswers.js` holds the current answer to each
+  question in state.
+- `src/components/PromptQuestionForm.jsx` renders the pooled questions
+  as radio button groups.
 - `src/data/promptTemplate.json` holds the wrapping prompt text as a
-  template string with `{{count}}` and `{{objectives}}` placeholders.
+  template string with `{{count}}`, `{{context}}`, and `{{objectives}}`
+  placeholders.
 - `src/lib/promptBuilder.js` is a small, dependency free module (see
-  `promptBuilder.test.js`) that numbers the objectives in order and
-  fills in the template.
+  `promptBuilder.test.js`): `formatAnswers` turns the question answers
+  into a "Starting context" bullet list, `formatObjectivesList` numbers
+  the objectives in order, and `buildNarrativePrompt` fills in the
+  template with both.
 - `src/components/CopyPromptButton.jsx` copies the built prompt to the
   clipboard and shows a brief "Copied!" confirmation.
 

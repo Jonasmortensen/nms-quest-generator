@@ -1,0 +1,7 @@
+[
+  {
+    "id": "location",
+    "question": "Where are you?",
+    "options": ["Base", "Planet", "Empty Space", "Space Station"]
+  }
+]

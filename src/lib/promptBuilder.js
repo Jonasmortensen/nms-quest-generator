@@ -13,12 +13,26 @@ export function formatObjectivesList(quests) {
 }
 
 /**
- * Fills a prompt template's {{count}} and {{objectives}} placeholders
- * using the given batch of quests.
+ * Formats answers to the pooled setup questions (see
+ * src/data/promptQuestions.json) as a bullet list, in question order,
+ * for inclusion in the prompt. Falls back to a question's first option
+ * when it hasn't been answered yet.
  */
-export function buildNarrativePrompt(quests, template) {
+export function formatAnswers(questions, answers) {
+  return questions
+    .map((question) => `- ${question.question} ${answers[question.id] ?? question.options[0]}`)
+    .join('\n')
+}
+
+/**
+ * Fills a prompt template's {{count}}, {{context}}, and {{objectives}}
+ * placeholders using the given batch of quests and a pre-formatted
+ * context string (see formatAnswers).
+ */
+export function buildNarrativePrompt(quests, template, context = '') {
   const objectives = formatObjectivesList(quests)
   return template
     .replace(/{{\s*count\s*}}/g, String(quests.length))
+    .replace(/{{\s*context\s*}}/g, context)
     .replace(/{{\s*objectives\s*}}/g, objectives)
 }

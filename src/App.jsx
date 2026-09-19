@@ -1,11 +1,15 @@
 import { QuestList } from './components/QuestList.jsx'
+import { PromptQuestionForm } from './components/PromptQuestionForm.jsx'
 import { CopyPromptButton } from './components/CopyPromptButton.jsx'
 import { useQuestGenerator } from './hooks/useQuestGenerator.js'
-import { buildNarrativePrompt } from './lib/promptBuilder.js'
+import { usePromptAnswers } from './hooks/usePromptAnswers.js'
+import { buildNarrativePrompt, formatAnswers } from './lib/promptBuilder.js'
 import promptTemplate from './data/promptTemplate.json'
+import promptQuestions from './data/promptQuestions.json'
 
 export default function App() {
   const { quests, regenerate } = useQuestGenerator()
+  const { answers, setAnswer } = usePromptAnswers(promptQuestions)
 
   return (
     <div className="app">
@@ -15,13 +19,28 @@ export default function App() {
           <button type="button" className="app__regenerate" onClick={regenerate}>
             Generate 5 New
           </button>
-          <CopyPromptButton
-            getText={() => buildNarrativePrompt(quests, promptTemplate.template)}
-          />
         </div>
       </header>
       <main>
         <QuestList quests={quests} />
+
+        <section className="prompt-section">
+          <h2>Narrate this questline</h2>
+          <PromptQuestionForm
+            questions={promptQuestions}
+            answers={answers}
+            onAnswerChange={setAnswer}
+          />
+          <CopyPromptButton
+            getText={() =>
+              buildNarrativePrompt(
+                quests,
+                promptTemplate.template,
+                formatAnswers(promptQuestions, answers)
+              )
+            }
+          />
+        </section>
       </main>
     </div>
   )
