@@ -45,10 +45,13 @@ npm test
   `{no matching item found}` and logs a console warning instead of
   crashing. `generateQuestBatch` also filters out tasks whose
   `prerequisites` don't match the current facts (via `prerequisitesMet`)
-  before picking from the remaining eligible pool, and carries each
-  chosen task's `effects` through unresolved onto the returned quest
-  object (`{ id, text, effects }`), since effects are already
-  concrete typed values, not templates to resolve.
+  before picking from the remaining eligible pool, and resolves each
+  chosen task's `effects` onto the returned quest object (`{ id, text,
+  effects }`) — a non-string effect value (e.g. a boolean) passes
+  through as-is, and a string effect value is resolved as its own
+  template, reusing any placeholder already resolved in that task's
+  `task` text so an effect can refer back to the exact value the player
+  saw (see "Task prerequisites, effects & player state" below).
 - `src/hooks/useQuestGenerator.js` wraps the engine in a hook that holds
   a batch of 5 quests in state and exposes `regenerate()`. It takes the
   current player state as an argument so regenerating always respects
@@ -156,6 +159,17 @@ a task change player state when completed, give it an `effects` entry
 the same way, e.g. `{ "hasFreighter": true }` on a "requisition a
 freighter" task.
 
+An `effects` value can also be a template string, resolved the same way
+as `task` — and if it contains a placeholder that also appears in that
+task's own `task` text, it reuses the *exact same resolved value*
+rather than rolling a new one. This is how `{ "task": "Go to [location]",
+"effects": { "currentLocation": "[location]" } }` sets `currentLocation`
+to whichever location the task actually sent the player to, instead of
+a fresh, unrelated one. An effect placeholder that *doesn't* appear in
+the task's text resolves independently as normal (see
+`resolveTemplate`'s `cache`/`record` options and `resolveEffects` in
+`questEngine.js`).
+
 ## Sending objectives to an LLM
 
 Below the generated objectives is a "Narrate this questline" section with
@@ -189,6 +203,14 @@ This is a copy/paste workflow today. It's written this way (pure
 template + pure builder function) so it's easy to later swap the button
 for a direct API call to an LLM without touching the prompt content
 itself.
+
+Clicking "Generate 5 New" also writes the "Where are you?" answer into
+player state's `currentLocation` (see `QuestGeneratorPage.handleRegenerate`),
+since it doubles as where the player is starting this new questline
+from. The updated value is passed straight into that same `regenerate()`
+call — `useQuestGenerator`'s `regenerate` accepts an optional override
+for exactly this, so the new batch's `prerequisites` checks see the
+just-set location immediately rather than the render's stale copy.
 
 ## Deploying to GitHub Pages
 

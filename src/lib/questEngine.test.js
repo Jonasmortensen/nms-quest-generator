@@ -62,6 +62,28 @@ describe('resolveTemplate', () => {
     expect(result).toBe('Carbon and Living Glass')
     vi.restoreAllMocks()
   })
+
+  it('records resolved placeholders when given a record option', () => {
+    const resolutions = {}
+    resolveTemplate('Go to [location]', data, { record: resolutions })
+    expect(['Trade Post', 'Ruins']).toContain(resolutions['[location]'])
+  })
+
+  it('reuses a recorded resolution via the cache option instead of resolving fresh', () => {
+    const resolutions = { '[location]': 'Trade Post' }
+    const result = resolveTemplate('Head to [location]', data, { cache: resolutions })
+    expect(result).toBe('Head to Trade Post')
+  })
+
+  it('still resolves repeated placeholders independently within one call even with a cache', () => {
+    vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0) // first [item] -> Carbon
+      .mockReturnValueOnce(0.99) // second [item] -> Living Glass
+    const resolutions = {}
+    const result = resolveTemplate('[item] and [item]', data, { cache: resolutions, record: resolutions })
+    expect(result).toBe('Carbon and Living Glass')
+    vi.restoreAllMocks()
+  })
 })
 
 describe('prerequisitesMet', () => {
@@ -134,5 +156,24 @@ describe('generateQuestBatch', () => {
     expect(batch).toEqual([])
     expect(warnSpy).toHaveBeenCalled()
     warnSpy.mockRestore()
+  })
+
+  it('resolves an effect placeholder to the same value used in the task text', () => {
+    const tasksWithLocationEffect = [
+      { task: 'Go to [location]', prerequisites: {}, effects: { currentLocation: '[location]' } },
+    ]
+    const batch = generateQuestBatch(tasksWithLocationEffect, data, 10)
+    batch.forEach((quest) => {
+      const resolvedLocation = quest.text.replace('Go to ', '')
+      expect(quest.effects.currentLocation).toBe(resolvedLocation)
+    })
+  })
+
+  it('leaves non-placeholder effect strings untouched', () => {
+    const tasksWithLiteralEffect = [
+      { task: 'Go to your freighter', prerequisites: {}, effects: { currentLocation: 'freighter' } },
+    ]
+    const batch = generateQuestBatch(tasksWithLiteralEffect, data, 1)
+    expect(batch[0].effects.currentLocation).toBe('freighter')
   })
 })

@@ -31,6 +31,18 @@ export function QuestGeneratorPage() {
     completeActive()
   }
 
+  function handleRegenerate() {
+    // The "Where are you?" prompt answer doubles as where the player is
+    // starting this new questline from, so a fresh batch's objectives
+    // are generated with player state reflecting that. Pass the updated
+    // state straight to regenerate rather than relying on this render's
+    // (still stale) `playerState`, since setPlayerStateValue's update
+    // won't be visible here until the next render.
+    const updatedPlayerState = { ...playerState, currentLocation: answers.location }
+    setPlayerStateValue('currentLocation', answers.location)
+    regenerate(updatedPlayerState)
+  }
+
   return (
     <>
       <div className="debug-toggle-row">
@@ -46,7 +58,7 @@ export function QuestGeneratorPage() {
       {showDebug && <DebugStatePanel state={playerState} />}
 
       <div className="app__actions">
-        <button type="button" className="app__regenerate" onClick={regenerate}>
+        <button type="button" className="app__regenerate" onClick={handleRegenerate}>
           Generate 5 New
         </button>
       </div>

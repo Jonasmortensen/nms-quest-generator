@@ -40,9 +40,16 @@ export function useQuestGenerator(playerState = {}) {
     writeJSON(STORAGE_KEY, batch)
   }, [batch])
 
-  const regenerate = useCallback(() => {
-    setBatch(freshBatch(playerState))
-  }, [playerState])
+  // Accepts an optional override so a caller that just updated player
+  // state (e.g. setting currentLocation from a prompt answer) can pass
+  // the up-to-date value straight through, rather than this regenerate
+  // seeing the stale `playerState` still closed over from this render.
+  const regenerate = useCallback(
+    (overridePlayerState) => {
+      setBatch(freshBatch(overridePlayerState ?? playerState))
+    },
+    [playerState]
+  )
 
   const completeActive = useCallback(() => {
     setBatch((prev) => ({

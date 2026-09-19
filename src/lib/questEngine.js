@@ -114,15 +114,54 @@ function resolvePlaceholder(match, tableName, queryString, rangeMin, rangeMax, d
  * resolve to a different row.
  *
  * `data` is expected to have the shape { items: [...], locations: [...] }.
+ *
+ * `options.cache`, when given, is consulted first for each placeholder
+ * match (keyed by its exact literal text, e.g. "[location]"): a hit
+ * reuses that value instead of resolving again. `options.record`, when
+ * given, has every freshly resolved placeholder written into it keyed
+ * the same way, but only once the whole template has been processed —
+ * never mid-call — so passing the same object as both `cache` and
+ * `record` to one call still resolves repeated placeholders in that
+ * call independently; only a *later* call sees what this one recorded.
+ * This is how a task's `effects` can refer back to a placeholder
+ * already resolved in its own `task` text (see generateQuestBatch)
+ * without re-rolling a new one.
  */
-export function resolveTemplate(template, data) {
+export function resolveTemplate(template, data, options = {}) {
   if (typeof template !== 'string') return template
+  const { cache, record } = options
+  const freshlyResolved = record ? {} : null
 
-  return template.replace(
-    PLACEHOLDER_RE,
-    (match, tableName, queryString, rangeMin, rangeMax) =>
-      resolvePlaceholder(match, tableName, queryString, rangeMin, rangeMax, data)
-  )
+  const result = template.replace(PLACEHOLDER_RE, (match, tableName, queryString, rangeMin, rangeMax) => {
+    if (cache && Object.prototype.hasOwnProperty.call(cache, match)) {
+      return cache[match]
+    }
+    const resolved = resolvePlaceholder(match, tableName, queryString, rangeMin, rangeMax, data)
+    if (freshlyResolved) freshlyResolved[match] = resolved
+    return resolved
+  })
+
+  if (record) Object.assign(record, freshlyResolved)
+  return result
+}
+
+/**
+ * Resolves a task's `effects` values against `data`, reusing whatever
+ * that task's own text already resolved a placeholder to (via
+ * `resolutions`) instead of picking a fresh one — e.g. an effect of
+ * "[location]" on a "Go to [location]" task lands on the exact location
+ * the task sent the player to. A placeholder in an effect that wasn't
+ * present in the task's text resolves fresh, and other effects on the
+ * same quest can then reuse that value too. Non-string values (e.g.
+ * booleans) pass through untouched.
+ */
+function resolveEffects(effects, data, resolutions) {
+  const resolved = {}
+  for (const [key, value] of Object.entries(effects || {})) {
+    resolved[key] =
+      typeof value === 'string' ? resolveTemplate(value, data, { cache: resolutions, record: resolutions }) : value
+  }
+  return resolved
 }
 
 /**
@@ -139,10 +178,12 @@ export function prerequisitesMet(prerequisites, facts = {}) {
  * Picks `count` task definitions ({ task, prerequisites, effects }) at
  * random (repeats allowed) from those whose prerequisites are met by
  * `facts`, and resolves each chosen template independently against
- * `data`. Each resolved quest carries its task's `effects` through
- * unresolved (see src/lib/playerState.js): the facts a caller should
- * apply to player state once that objective is completed. A task with
- * no effects carries an empty object, never undefined.
+ * `data`. Each resolved quest carries its task's `effects` through,
+ * resolved the same way (see resolveEffects) so a placeholder in an
+ * effect can refer back to the exact value resolved in that task's own
+ * text (see src/lib/playerState.js for what a caller does with the
+ * result: apply it to player state once that objective is completed).
+ * A task with no effects carries an empty object, never undefined.
  */
 export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
   const eligibleTasks = tasks.filter((taskDef) => prerequisitesMet(taskDef.prerequisites, facts))
@@ -155,10 +196,12 @@ export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
   const batch = []
   for (let i = 0; i < count; i++) {
     const taskDef = eligibleTasks[Math.floor(Math.random() * eligibleTasks.length)]
+    const resolutions = {}
+    const text = resolveTemplate(taskDef.task, data, { record: resolutions })
     batch.push({
       id: `${Date.now()}-${i}-${Math.floor(Math.random() * 1e6)}`,
-      text: resolveTemplate(taskDef.task, data),
-      effects: taskDef.effects || {},
+      text,
+      effects: resolveEffects(taskDef.effects, data, resolutions),
     })
   }
   return batch

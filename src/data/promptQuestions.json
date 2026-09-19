@@ -2,6 +2,6 @@
   {
     "id": "location",
     "question": "Where are you?",
-    "options": ["Base", "Planet", "Empty Space", "Space Station"]
+    "options": ["base", "planet", "empty_space", "space_station"]
   }
 ]

@@ -27,7 +27,7 @@
   {
     "task": "Visit [location?hasNpcPilots=true] and speak with a visiting pilot",
     "prerequisites": {},
-    "effects": {}
+    "effects": {"currentLocation" : "[location?hasNpcPilots=true]"}
   },
   {
     "task": "Recover [1-2] [item?rarity=exotic]",
@@ -37,7 +37,7 @@
   {
     "task": "Bring [item?type=technology] to an engineer stationed at [location?allowsTrade=true]",
     "prerequisites": {},
-    "effects": {}
+    "effects": {"currentLocation" : "[location?allowsTrade=true]"}
   },
   {
     "task": "Go to [location]",
