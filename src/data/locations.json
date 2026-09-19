@@ -1,0 +1,20 @@
+[
+  { "name": "Galactic Trade Terminal", "allowsTrade": true, "hasNpcPilots": true },
+  { "name": "Orbital Space Station", "allowsTrade": true, "hasNpcPilots": true },
+  { "name": "Frontier Trading Post", "allowsTrade": true, "hasNpcPilots": false },
+  { "name": "Weathered Trading Post", "allowsTrade": true, "hasNpcPilots": false },
+  { "name": "Abandoned Outpost", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Mining Outpost", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Planetary Settlement", "allowsTrade": true, "hasNpcPilots": false },
+  { "name": "Frontier Colony", "allowsTrade": true, "hasNpcPilots": false },
+  { "name": "Crashed Freighter", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Derelict Freighter", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Ancient Ruins", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Alien Monolith", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Observatory", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Manufacturing Facility", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Distress Beacon Site", "allowsTrade": false, "hasNpcPilots": true },
+  { "name": "Nomadic Trading Post", "allowsTrade": true, "hasNpcPilots": true },
+  { "name": "Sentinel Pillar", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "Runaway Freighter Hub", "allowsTrade": true, "hasNpcPilots": true }
+]
