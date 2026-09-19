@@ -62,12 +62,16 @@ body {
   color: transparent;
 }
 
-.app__regenerate {
-  align-self: center;
+.app__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.app__regenerate,
+.app__copy-prompt {
   appearance: none;
-  border: 1px solid var(--accent);
-  background: rgba(255, 140, 61, 0.1);
-  color: var(--accent);
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -78,12 +82,29 @@ body {
   transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
+.app__regenerate:active,
+.app__copy-prompt:active {
+  transform: scale(0.97);
+}
+
+.app__regenerate {
+  border: 1px solid var(--accent);
+  background: rgba(255, 140, 61, 0.1);
+  color: var(--accent);
+}
+
 .app__regenerate:hover {
   background: rgba(255, 140, 61, 0.2);
 }
 
-.app__regenerate:active {
-  transform: scale(0.97);
+.app__copy-prompt {
+  border: 1px solid var(--accent-alt);
+  background: rgba(56, 224, 216, 0.1);
+  color: var(--accent-alt);
+}
+
+.app__copy-prompt:hover {
+  background: rgba(56, 224, 216, 0.2);
 }
 
 .quest-list {

@@ -37,6 +37,26 @@ npm test
 Because the engine has no React dependency, it can be unit tested in
 isolation (see `src/lib/questEngine.test.js`) or reused outside this UI.
 
+## Sending objectives to an LLM
+
+The "Copy AI Prompt" button copies the current batch of 5 objectives to
+the clipboard, wrapped in instructions asking an LLM to weave them into
+a single chronological narrative with flavor text before, between, and
+after each objective.
+
+- `src/data/promptTemplate.json` holds the wrapping prompt text as a
+  template string with `{{count}}` and `{{objectives}}` placeholders.
+- `src/lib/promptBuilder.js` is a small, dependency free module (see
+  `promptBuilder.test.js`) that numbers the objectives in order and
+  fills in the template.
+- `src/components/CopyPromptButton.jsx` copies the built prompt to the
+  clipboard and shows a brief "Copied!" confirmation.
+
+This is a copy/paste workflow today. It's written this way (pure
+template + pure builder function) so it's easy to later swap the button
+for a direct API call to an LLM without touching the prompt content
+itself.
+
 ## Deploying to GitHub Pages
 
 This repo is configured to deploy automatically via GitHub Actions
