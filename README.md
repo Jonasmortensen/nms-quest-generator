@@ -44,7 +44,10 @@ npm test
   a single `activeIndex`: objectives are completed strictly in order
   (top to bottom), so that one number is enough to derive every card's
   status — everything before it is completed, the one at it is active,
-  everything after it is upcoming.
+  everything after it is upcoming. The batch and progress are persisted
+  to `localStorage` (via `src/lib/storage.js`), so reloading the page or
+  navigating away and back keeps the same objectives and progress —
+  only clicking "Generate 5 New" replaces them.
 - `src/components/QuestList.jsx` and `QuestCard.jsx` render the batch in
   order. The active objective is highlighted yellow with a "Complete"
   button (advances `activeIndex`); completed ones are green with a
