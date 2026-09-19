@@ -21,11 +21,16 @@ npm test
 - `src/data/items.json` and `src/data/locations.json` are the raw data
   tables used to resolve placeholders.
 - `src/data/tasks.json` is the pool of task templates. Each entry is
-  `{ "task": "<template string>", "prerequisites": { ... } }`.
-  `prerequisites` is a plain object of fact name to required value (e.g.
-  `{ "hasFreighter": true }`); an empty object means the task has no
-  restrictions and is always eligible. See "Task prerequisites &
-  Save Info" below for where those facts come from.
+  `{ "task": "<template string>", "prerequisites": { ... }, "effects":
+  { ... } }`. Both `prerequisites` and `effects` are plain objects of
+  fact name to value, keyed the same way as Save Info's facts (e.g.
+  `{ "hasFreighter": true }`); an empty object means "no restriction" /
+  "no change". `prerequisites` gates whether the task can be picked;
+  `effects` are the facts applied to Save Info once the objective is
+  marked complete — e.g. a "requisition a freighter" task can have
+  `"effects": { "hasFreighter": true }` to update Save Info the moment
+  it's completed. See "Task prerequisites & Save Info" below for where
+  those facts come from and how effects get written back.
 - `src/lib/questEngine.js` is a framework agnostic, dependency free
   templating engine (pure functions, no React). It resolves placeholders
   like `[item?type=mineral&craftable=true]`, `[location?allowsTrade=true]`,
@@ -36,7 +41,10 @@ npm test
   `{no matching item found}` and logs a console warning instead of
   crashing. `generateQuestBatch` also filters out tasks whose
   `prerequisites` don't match the current facts (via `prerequisitesMet`)
-  before picking from the remaining eligible pool.
+  before picking from the remaining eligible pool, and carries each
+  chosen task's `effects` through unresolved onto the returned quest
+  object (`{ id, text, effects }`), since effects are already
+  concrete typed values, not templates to resolve.
 - `src/hooks/useQuestGenerator.js` wraps the engine in a hook that holds
   a batch of 5 quests in state and exposes `regenerate()`. It takes the
   current facts as an argument so regenerating always respects the
@@ -73,28 +81,60 @@ questions-as-radio-buttons renderer driven by a `{ id, question,
 options }[]` array; it doesn't know or care whether its answers are
 persisted or session-only.
 
-## Task prerequisites & Save Info
+## Task prerequisites, effects & Save Info
 
 `src/data/saveInfoQuestions.json` is the pool of questions on the Save
 Info page, e.g. `{ "id": "hasFreighter", "question": "Do you own a
 freighter?", "options": ["Yes", "No"] }`. Add more by appending to this
 array the same way as `promptQuestions.json`.
 
+Save Info exists in two representations, and `src/lib/saveInfo.js` is
+the single place that converts between them so the rest of the app
+never has to:
+
+- **Answers** — the readable, labelled form shown in the UI and
+  persisted to `localStorage`, keyed by question id (e.g.
+  `{ hasFreighter: "Yes" }`). This is what `QuestionForm.jsx` reads and
+  writes.
+- **Facts** — the flat, typed form the engine works with, also keyed by
+  question id (e.g. `{ hasFreighter: true }`). This is what a task's
+  `prerequisites` and `effects` are expressed in.
+
+The conversions:
+
+- `answersToFacts(questions, answers)` — answers → facts. A Yes/No
+  question becomes a boolean; any other question passes through as its
+  raw string answer.
+- `valueToAnswer(question, value)` — the inverse for one question: turns
+  a typed value back into the exact label from that question's
+  `options` (matched case-insensitively, so it round-trips regardless of
+  how the options were capitalized in the JSON).
+- `factsToAnswers(questions, facts)` — applies `valueToAnswer` across a
+  partial facts object (e.g. a task's `effects`), so unrelated answers
+  are left untouched.
+- `applyEffects(facts, effects)` — merges a task's effects onto an
+  existing facts object (effects win).
+
+Wiring:
+
 - `src/hooks/usePersistedAnswers.js` is like `usePromptAnswers` but
   reads/writes its answers to `localStorage`, so they survive reloads
   and future visits instead of resetting each session.
-- `src/lib/saveInfo.js` (`answersToFacts`) converts those answers into a
-  flat facts object for the engine: a Yes/No question becomes a boolean
-  keyed by its `id` (e.g. `{ hasFreighter: true }`); any other question
-  is passed through as its raw string answer. This is what a task's
-  `prerequisites` object is checked against.
-- `QuestGeneratorPage` reads the same persisted answers, converts them
-  with `answersToFacts`, and passes the result into `useQuestGenerator`
-  so only eligible tasks are ever picked.
+- `QuestGeneratorPage` reads the persisted answers, converts them with
+  `answersToFacts`, and passes the result into `useQuestGenerator` so
+  only eligible tasks are ever picked.
+- When the active objective is marked complete, `QuestGeneratorPage`
+  converts that quest's `effects` back into answers with
+  `factsToAnswers` and writes each one via `usePersistedAnswers`'
+  `setAnswer`, so Save Info (and the form on the Save Info page) update
+  immediately to reflect what just happened in the fiction.
 
 To add a new gated task, give it a `prerequisites` entry keyed by a
 Save Info question's `id`, e.g. `{ "hasFreighter": true }` for a task
-that should only appear once the player owns a freighter.
+that should only appear once the player owns a freighter. To make a
+task change Save Info when completed, give it an `effects` entry the
+same way, e.g. `{ "hasFreighter": true }` on a "requisition a freighter"
+task.
 
 ## Sending objectives to an LLM
 
@@ -176,3 +216,10 @@ The engine is intentionally small and isolated so it's easy to grow:
 - add a "lock this objective" feature or filter controls in the UI
   without touching `questEngine.js` at all, since it has no knowledge of
   React or component state
+
+**Known gap (TODO):** "Play From Here" rewinds `activeIndex` but does not
+undo Save Info changes made by the `effects` of the objectives it
+un-completes (see the TODO comment on `playFromHere` in
+`useQuestGenerator.js`). Fixing this needs a snapshot of the facts (or
+just the prior value of each overwritten key) taken alongside each quest
+when it's completed, then replayed in reverse down to the rewind point.

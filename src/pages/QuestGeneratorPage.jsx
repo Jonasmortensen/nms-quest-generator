@@ -5,16 +5,30 @@ import { useQuestGenerator } from '../hooks/useQuestGenerator.js'
 import { usePromptAnswers } from '../hooks/usePromptAnswers.js'
 import { usePersistedAnswers } from '../hooks/usePersistedAnswers.js'
 import { buildNarrativePrompt, formatAnswers } from '../lib/promptBuilder.js'
-import { answersToFacts, SAVE_INFO_STORAGE_KEY } from '../lib/saveInfo.js'
+import { answersToFacts, factsToAnswers, SAVE_INFO_STORAGE_KEY } from '../lib/saveInfo.js'
 import promptTemplate from '../data/promptTemplate.json'
 import promptQuestions from '../data/promptQuestions.json'
 import saveInfoQuestions from '../data/saveInfoQuestions.json'
 
 export function QuestGeneratorPage() {
-  const { answers: saveInfoAnswers } = usePersistedAnswers(saveInfoQuestions, SAVE_INFO_STORAGE_KEY)
+  const { answers: saveInfoAnswers, setAnswer: setSaveInfoAnswer } = usePersistedAnswers(
+    saveInfoQuestions,
+    SAVE_INFO_STORAGE_KEY
+  )
   const facts = answersToFacts(saveInfoQuestions, saveInfoAnswers)
   const { quests, activeIndex, regenerate, completeActive, playFromHere } = useQuestGenerator(facts)
   const { answers, setAnswer } = usePromptAnswers(promptQuestions)
+
+  function handleComplete() {
+    const activeQuest = quests[activeIndex]
+    if (activeQuest) {
+      const updatedAnswers = factsToAnswers(saveInfoQuestions, activeQuest.effects)
+      Object.entries(updatedAnswers).forEach(([questionId, answer]) => {
+        setSaveInfoAnswer(questionId, answer)
+      })
+    }
+    completeActive()
+  }
 
   return (
     <>
@@ -27,7 +41,7 @@ export function QuestGeneratorPage() {
       <QuestList
         quests={quests}
         activeIndex={activeIndex}
-        onComplete={completeActive}
+        onComplete={handleComplete}
         onPlayFromHere={playFromHere}
       />
 

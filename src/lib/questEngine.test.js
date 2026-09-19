@@ -84,7 +84,24 @@ describe('generateQuestBatch', () => {
       expect(typeof quest.text).toBe('string')
       expect(quest.text.length).toBeGreaterThan(0)
       expect(quest.id).toBeDefined()
+      expect(quest.effects).toEqual({})
     })
+  })
+
+  it('carries a task\'s effects through onto each resolved quest', () => {
+    const tasksWithEffects = [
+      { task: 'Requisition a freighter', prerequisites: {}, effects: { hasFreighter: true } },
+    ]
+    const batch = generateQuestBatch(tasksWithEffects, data, 3)
+    batch.forEach((quest) => {
+      expect(quest.effects).toEqual({ hasFreighter: true })
+    })
+  })
+
+  it('defaults effects to an empty object when a task has none', () => {
+    const tasksWithoutEffects = [{ task: 'Visit [location]', prerequisites: {} }]
+    const batch = generateQuestBatch(tasksWithoutEffects, data, 1)
+    expect(batch[0].effects).toEqual({})
   })
 
   it('only picks tasks whose prerequisites match the given facts', () => {

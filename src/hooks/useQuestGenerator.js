@@ -51,6 +51,12 @@ export function useQuestGenerator(facts = {}) {
     }))
   }, [])
 
+  // TODO: rewinding does not undo Save Info changes made by completed
+  // objectives' `effects` (see QuestGeneratorPage.handleComplete). To
+  // support that, we'd need to snapshot the facts (or just the prior
+  // value of each overwritten key) alongside each quest when it's
+  // completed, then replay the inverse for every completed objective
+  // from the end of the batch back down to `index` here.
   const playFromHere = useCallback((index) => {
     setBatch((prev) => ({ ...prev, activeIndex: index }))
   }, [])
