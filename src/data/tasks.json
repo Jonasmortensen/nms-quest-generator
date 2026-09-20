@@ -11,11 +11,16 @@
   },
   {
     "task": "Scan [3-6] [item?tags=scannable] found in the wild",
-    "prerequisites": {},
+    "prerequisites": {"currentLocation":"planet"},
     "effects": {}
   },
   {
     "task": "Collect [20-50] units of [item?type=mineral] from a nearby deposit",
+    "prerequisites": {"currentLocation": "planet"},
+    "effects": {}
+  },
+    {
+    "task": "Refine [20-50] units of [item?tags=refined]",
     "prerequisites": {},
     "effects": {}
   },
@@ -53,5 +58,9 @@
     "task": "Go to your freighter",
     "prerequisites": { "hasFreighter": true },
     "effects": {"currentLocation": "freighter"}
+  },
+  {
+    "task": "Talk to the fleet commander",
+    "prerequisites": { "currentLocation": "freighter" }
   }
 ]

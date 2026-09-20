@@ -45,13 +45,24 @@ npm test
   `{no matching item found}` and logs a console warning instead of
   crashing. `generateQuestBatch` also filters out tasks whose
   `prerequisites` don't match the current facts (via `prerequisitesMet`)
-  before picking from the remaining eligible pool, and resolves each
-  chosen task's `effects` onto the returned quest object (`{ id, text,
-  effects }`) — a non-string effect value (e.g. a boolean) passes
-  through as-is, and a string effect value is resolved as its own
-  template, reusing any placeholder already resolved in that task's
-  `task` text so an effect can refer back to the exact value the player
-  saw (see "Task prerequisites, effects & player state" below).
+  before picking each objective, and resolves the chosen task's
+  `effects` onto the returned quest object (`{ id, text, effects }`) —
+  a non-string effect value (e.g. a boolean) passes through as-is, and a
+  string effect value is resolved as its own template, reusing any
+  placeholder already resolved in that task's `task` text so an effect
+  can refer back to the exact value the player saw (see "Task
+  prerequisites, effects & player state" below). Eligibility isn't
+  decided once for the whole batch: it's simulated objective by
+  objective, folding each picked objective's resolved `effects` into a
+  running copy of the facts before picking the next one. So if
+  objective 2's `effects` change `currentLocation`, objective 3 is
+  picked from tasks whose `prerequisites` match *that* location, not
+  whatever the player's location was when "Generate 5 New" was clicked —
+  the batch reads as one locally-consistent sequence rather than five
+  independent rolls. If a step ever finds no eligible tasks, generation
+  stops there (with a console warning) and whatever was already
+  generated is returned, so a batch can come back shorter than 5 rather
+  than crashing or discarding valid earlier objectives.
 - `src/hooks/useQuestGenerator.js` wraps the engine in a hook that holds
   a batch of 5 quests in state and exposes `regenerate()`. It takes the
   current player state as an argument so regenerating always respects

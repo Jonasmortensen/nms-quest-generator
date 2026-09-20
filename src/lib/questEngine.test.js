@@ -176,4 +176,59 @@ describe('generateQuestBatch', () => {
     const batch = generateQuestBatch(tasksWithLiteralEffect, data, 1)
     expect(batch[0].effects.currentLocation).toBe('freighter')
   })
+
+  it("reflects an earlier objective's effects in a later objective's eligibility within the same batch", () => {
+    // Task A is only eligible before it's ever been picked, and its own
+    // effect disqualifies it from being picked again; task B is only
+    // eligible after task A's effect has fired. The only way this exact
+    // two-step sequence can come out is if step 2's eligibility check
+    // sees step 1's effect, not the facts the batch started with.
+    const sequentialTasks = [
+      {
+        task: 'Requisition a starter freighter',
+        prerequisites: { hasFreighter: false },
+        effects: { hasFreighter: true },
+      },
+      {
+        task: 'Fly to your freighter',
+        prerequisites: { hasFreighter: true },
+        effects: {},
+      },
+    ]
+    const batch = generateQuestBatch(sequentialTasks, data, 2, { hasFreighter: false })
+    expect(batch).toHaveLength(2)
+    expect(batch[0].text).toBe('Requisition a starter freighter')
+    expect(batch[1].text).toBe('Fly to your freighter')
+  })
+
+  it('lets a location-changing effect gate which objective can come next', () => {
+    const locationTasks = [
+      {
+        task: 'Travel to the mining outpost',
+        prerequisites: { currentLocation: 'base' },
+        effects: { currentLocation: 'mining_outpost' },
+      },
+      {
+        task: 'Mine ore at the outpost',
+        prerequisites: { currentLocation: 'mining_outpost' },
+        effects: {},
+      },
+    ]
+    const batch = generateQuestBatch(locationTasks, data, 2, { currentLocation: 'base' })
+    expect(batch).toHaveLength(2)
+    expect(batch[0].text).toBe('Travel to the mining outpost')
+    expect(batch[1].text).toBe('Mine ore at the outpost')
+  })
+
+  it('stops early and returns a partial batch when a later step has no eligible tasks', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const deadEndTasks = [
+      { task: 'Go somewhere unrepeatable', prerequisites: { visited: false }, effects: { visited: true } },
+    ]
+    const batch = generateQuestBatch(deadEndTasks, data, 5, { visited: false })
+    expect(batch).toHaveLength(1)
+    expect(batch[0].text).toBe('Go somewhere unrepeatable')
+    expect(warnSpy).toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
 })

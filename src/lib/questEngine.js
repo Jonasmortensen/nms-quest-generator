@@ -176,33 +176,51 @@ export function prerequisitesMet(prerequisites, facts = {}) {
 
 /**
  * Picks `count` task definitions ({ task, prerequisites, effects }) at
- * random (repeats allowed) from those whose prerequisites are met by
- * `facts`, and resolves each chosen template independently against
- * `data`. Each resolved quest carries its task's `effects` through,
- * resolved the same way (see resolveEffects) so a placeholder in an
- * effect can refer back to the exact value resolved in that task's own
- * text (see src/lib/playerState.js for what a caller does with the
- * result: apply it to player state once that objective is completed).
- * A task with no effects carries an empty object, never undefined.
+ * random (repeats allowed), resolving each chosen template
+ * independently against `data`, and returns them in order. Each
+ * resolved quest carries its task's `effects` through, resolved the
+ * same way (see resolveEffects) so a placeholder in an effect can refer
+ * back to the exact value resolved in that task's own text (see
+ * src/lib/playerState.js for what a caller does with the result: apply
+ * it to player state once that objective is completed). A task with no
+ * effects carries an empty object, never undefined.
+ *
+ * Eligibility is simulated sequentially rather than decided once up
+ * front: it starts from `facts`, and after each objective is picked,
+ * that objective's own resolved `effects` are folded into a running
+ * copy of the facts before picking the next one. This means an earlier
+ * objective changing something (e.g. its `effects` set
+ * `currentLocation`) is reflected in which tasks are eligible for the
+ * objective that follows it — the batch reads as one continuous,
+ * locally-consistent sequence rather than five independent picks. If a
+ * step finds no eligible tasks (including the very first), generation
+ * stops there with a console warning and whatever was already
+ * generated is returned, so the batch can come back shorter than
+ * `count` rather than crashing or discarding valid earlier objectives.
  */
 export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
-  const eligibleTasks = tasks.filter((taskDef) => prerequisitesMet(taskDef.prerequisites, facts))
-
-  if (eligibleTasks.length === 0) {
-    console.warn('questEngine: no tasks match the current prerequisites/facts')
-    return []
-  }
-
+  let currentFacts = facts
   const batch = []
+
   for (let i = 0; i < count; i++) {
+    const eligibleTasks = tasks.filter((taskDef) => prerequisitesMet(taskDef.prerequisites, currentFacts))
+    if (eligibleTasks.length === 0) {
+      console.warn('questEngine: no tasks match the current prerequisites/facts')
+      break
+    }
+
     const taskDef = eligibleTasks[Math.floor(Math.random() * eligibleTasks.length)]
     const resolutions = {}
     const text = resolveTemplate(taskDef.task, data, { record: resolutions })
+    const effects = resolveEffects(taskDef.effects, data, resolutions)
+
     batch.push({
       id: `${Date.now()}-${i}-${Math.floor(Math.random() * 1e6)}`,
       text,
-      effects: resolveEffects(taskDef.effects, data, resolutions),
+      effects,
     })
+    currentFacts = { ...currentFacts, ...effects }
   }
+
   return batch
 }

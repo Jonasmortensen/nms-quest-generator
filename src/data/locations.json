@@ -1,20 +1,8 @@
 [
-  { "name": "galactic_trade_terminal", "allowsTrade": true, "hasNpcPilots": true },
-  { "name": "orbital_space_station", "allowsTrade": true, "hasNpcPilots": true },
-  { "name": "frontier_trading_post", "allowsTrade": true, "hasNpcPilots": false },
-  { "name": "weathered_trading_post", "allowsTrade": true, "hasNpcPilots": false },
-  { "name": "abandoned_outpost", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "mining_outpost", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "planetary_settlement", "allowsTrade": true, "hasNpcPilots": false },
-  { "name": "frontier_colony", "allowsTrade": true, "hasNpcPilots": false },
-  { "name": "crashed_freighter", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "derelict_freighter", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "ancient_ruins", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "alien_monolith", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "observatory", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "manufacturing_facility", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "distress_beacon_site", "allowsTrade": false, "hasNpcPilots": true },
-  { "name": "nomadic_trading_post", "allowsTrade": true, "hasNpcPilots": true },
-  { "name": "sentinel_pillar", "allowsTrade": false, "hasNpcPilots": false },
-  { "name": "runaway_freighter_hub", "allowsTrade": true, "hasNpcPilots": true }
+  { "name": "base", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "space_station", "allowsTrade": true, "hasNpcPilots": true },
+  { "name": "anomali", "allowsTrade": true, "hasNpcPilots": true },
+  { "name": "planet", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "ship", "allowsTrade": false, "hasNpcPilots": false },
+  { "name": "space", "allowsTrade": false, "hasNpcPilots": false }
 ]
