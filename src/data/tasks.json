@@ -5,6 +5,11 @@
     "effects": {}
   },
   {
+    "task": "Negotiate a bulk trade discount with the local merchant",
+    "prerequisites": { "currentLocation.allowsTrade": true },
+    "effects": {}
+  },
+  {
     "task": "Craft [1-5] [item?tags=craftable]",
     "prerequisites": {},
     "effects": {}

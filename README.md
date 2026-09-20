@@ -181,6 +181,24 @@ the task's text resolves independently as normal (see
 `resolveTemplate`'s `cache`/`record` options and `resolveEffects` in
 `questEngine.js`).
 
+A `prerequisites` (or `effects`) key can also be **dotted**, e.g.
+`"currentLocation.allowsTrade": true`, to check a *property of the row
+a fact points to* rather than the fact's own value. The part before the
+dot (`currentLocation`) names a fact whose value is looked up by `name`
+in the matching data table — a leading `current` is stripped and the
+rest pluralized, so `currentLocation` looks in `data.locations`, the
+same table the `[location]` placeholder draws from — and the part after
+the dot (`allowsTrade`) is the property checked on that row. So
+`{ "task": "Negotiate a bulk trade discount with the local merchant",
+"prerequisites": { "currentLocation.allowsTrade": true } }` is available
+at *any* location where `allowsTrade` is `true` in `locations.json`,
+not just one specific location name. If the fact isn't set yet, or its
+value doesn't match any row (e.g. the schema's default before the
+player has ever moved), the prerequisite is simply not met — no error.
+If the derived table name doesn't exist in `data` at all (usually a
+typo in the prerequisite key), it warns and is also not met. See
+`tableNameForStateKey`/`resolveIndirectFact` in `questEngine.js`.
+
 ## Sending objectives to an LLM
 
 Below the generated objectives is a "Narrate this questline" section with

@@ -103,6 +103,34 @@ describe('prerequisitesMet', () => {
     expect(prerequisitesMet(prerequisites, { hasFreighter: true, hasShip: true })).toBe(true)
     expect(prerequisitesMet(prerequisites, { hasFreighter: true, hasShip: false })).toBe(false)
   })
+
+  it('checks a property on the row identified by a fact, for a dotted key', () => {
+    const prerequisites = { 'currentLocation.allowsTrade': true }
+    expect(prerequisitesMet(prerequisites, { currentLocation: 'Trade Post' }, data)).toBe(true)
+    expect(prerequisitesMet(prerequisites, { currentLocation: 'Ruins' }, data)).toBe(false)
+  })
+
+  it('matches the location name case insensitively for a dotted key', () => {
+    const prerequisites = { 'currentLocation.allowsTrade': true }
+    expect(prerequisitesMet(prerequisites, { currentLocation: 'trade post' }, data)).toBe(true)
+  })
+
+  it('is false for a dotted key when the fact is unset, unknown, or data is missing', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const prerequisites = { 'currentLocation.allowsTrade': true }
+    expect(prerequisitesMet(prerequisites, {}, data)).toBe(false)
+    expect(prerequisitesMet(prerequisites, { currentLocation: 'Unknown' }, data)).toBe(false)
+    expect(prerequisitesMet(prerequisites, { currentLocation: 'Trade Post' })).toBe(false)
+    warnSpy.mockRestore()
+  })
+
+  it('warns and is false for a dotted key whose table does not exist', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = prerequisitesMet({ 'currentWidget.enabled': true }, { currentWidget: 'gizmo' }, data)
+    expect(result).toBe(false)
+    expect(warnSpy).toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
 })
 
 describe('generateQuestBatch', () => {
@@ -218,6 +246,23 @@ describe('generateQuestBatch', () => {
     expect(batch).toHaveLength(2)
     expect(batch[0].text).toBe('Travel to the mining outpost')
     expect(batch[1].text).toBe('Mine ore at the outpost')
+  })
+
+  it('gates a task on a property of the current location, not just an exact location match', () => {
+    const tradeGatedTasks = [
+      {
+        task: 'Negotiate a bulk discount',
+        prerequisites: { 'currentLocation.allowsTrade': true },
+        effects: {},
+      },
+    ]
+    const tradingBatch = generateQuestBatch(tradeGatedTasks, data, 3, { currentLocation: 'Trade Post' })
+    expect(tradingBatch).toHaveLength(3)
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const noTradeBatch = generateQuestBatch(tradeGatedTasks, data, 3, { currentLocation: 'Ruins' })
+    expect(noTradeBatch).toEqual([])
+    warnSpy.mockRestore()
   })
 
   it('stops early and returns a partial batch when a later step has no eligible tasks', () => {

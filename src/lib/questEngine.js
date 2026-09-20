@@ -39,12 +39,26 @@ function parseFilters(queryString) {
 }
 
 /**
+ * Returns true if `actual` matches `expected`: when `actual` is an
+ * array (e.g. a "tags" list), checks membership case insensitively, so
+ * an expected value of "craftable" reads as "includes craftable";
+ * booleans compare strictly; anything else compares as strings, case
+ * insensitively.
+ */
+function valuesMatch(actual, expected) {
+  if (Array.isArray(actual)) {
+    return actual.some((item) => String(item).toLowerCase() === String(expected).toLowerCase())
+  }
+  if (typeof expected === 'boolean' || typeof actual === 'boolean') {
+    return actual === expected
+  }
+  return String(actual).toLowerCase() === String(expected).toLowerCase()
+}
+
+/**
  * Returns true if `row` matches every field/value pair in `filters`,
- * comparing field names case insensitively. A string filter value
- * matches a string field's value case insensitively; when the field's
- * actual value is an array (e.g. a "tags" list), the filter instead
- * checks that the array contains a matching entry, so
- * "tags=craftable" reads as "tags includes craftable".
+ * comparing field names case insensitively (see valuesMatch for how
+ * each field's value is compared).
  */
 function rowMatchesFilters(row, filters) {
   return Object.entries(filters).every(([field, expected]) => {
@@ -52,16 +66,7 @@ function rowMatchesFilters(row, filters) {
       ([key]) => key.toLowerCase() === field
     )
     if (!actualEntry) return false
-    const actual = actualEntry[1]
-
-    if (Array.isArray(actual)) {
-      return actual.some((tag) => String(tag).toLowerCase() === String(expected).toLowerCase())
-    }
-
-    if (typeof expected === 'boolean' || typeof actual === 'boolean') {
-      return actual === expected
-    }
-    return String(actual).toLowerCase() === String(expected).toLowerCase()
+    return valuesMatch(actualEntry[1], expected)
   })
 }
 
@@ -165,13 +170,72 @@ function resolveEffects(effects, data, resolutions) {
 }
 
 /**
- * Returns true if every key/value pair in `prerequisites` matches the
- * given `facts` (e.g. { hasFreighter: true }). A task with no
- * prerequisites, or an empty prerequisites object, is always eligible.
+ * Derives the data table a fact's value should be looked up in, by
+ * convention: strip a leading "current" (so "currentLocation" ->
+ * "Location"), lowercase the first letter, and pluralize — matching
+ * how placeholders already map a table name to `data` (see
+ * resolvePlaceholder). "currentLocation" therefore looks in
+ * `data.locations`, same as the `[location]` placeholder does.
  */
-export function prerequisitesMet(prerequisites, facts = {}) {
+function tableNameForStateKey(stateKey) {
+  const withoutPrefix = stateKey.replace(/^current/, '') || stateKey
+  return `${withoutPrefix[0].toLowerCase()}${withoutPrefix.slice(1)}s`
+}
+
+/**
+ * Resolves a dotted prerequisite key like "currentLocation.allowsTrade":
+ * looks up the row in the table for `stateKey` (see tableNameForStateKey)
+ * whose `name` matches `facts[stateKey]`, then returns that row's
+ * `property`. Returns undefined (rather than throwing or warning) when
+ * the fact isn't set, the row can't be found, or the property is
+ * missing — a location the player is at that isn't in `data.locations`,
+ * or a still-default value like "Unknown", are expected, not errors;
+ * an unknown *table* is warned about since that usually means a typo in
+ * the prerequisite key itself.
+ */
+function resolveIndirectFact(stateKey, property, facts, data) {
+  const identifier = facts[stateKey]
+  if (identifier === undefined) return undefined
+
+  const tableName = tableNameForStateKey(stateKey)
+  const table = data[tableName]
+  if (!table) {
+    console.warn(`questEngine: unknown table "${tableName}" for prerequisite key "${stateKey}.${property}"`)
+    return undefined
+  }
+
+  const row = table.find((candidate) => String(candidate.name).toLowerCase() === String(identifier).toLowerCase())
+  if (!row) return undefined
+
+  const propertyEntry = Object.entries(row).find(([rowKey]) => rowKey.toLowerCase() === property.toLowerCase())
+  return propertyEntry ? propertyEntry[1] : undefined
+}
+
+/**
+ * Returns true if every key/value pair in `prerequisites` matches.
+ * A plain key (e.g. "hasFreighter") compares directly against `facts`.
+ * A dotted key (e.g. "currentLocation.allowsTrade") instead checks a
+ * property on the row identified by that fact — see
+ * resolveIndirectFact — which is how a prerequisite can depend on data
+ * about the player's current location (or anything else named the same
+ * way as a table) rather than just an exact value already in `facts`.
+ * `data` is only needed when a prerequisite uses a dotted key. A task
+ * with no prerequisites, or an empty prerequisites object, is always
+ * eligible.
+ */
+export function prerequisitesMet(prerequisites, facts = {}, data = {}) {
   if (!prerequisites) return true
-  return Object.entries(prerequisites).every(([key, expected]) => facts[key] === expected)
+  return Object.entries(prerequisites).every(([key, expected]) => {
+    const dotIndex = key.indexOf('.')
+    if (dotIndex === -1) {
+      return facts[key] === expected
+    }
+
+    const stateKey = key.slice(0, dotIndex)
+    const property = key.slice(dotIndex + 1)
+    const actual = resolveIndirectFact(stateKey, property, facts, data)
+    return actual !== undefined && valuesMatch(actual, expected)
+  })
 }
 
 /**
@@ -203,7 +267,7 @@ export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
   const batch = []
 
   for (let i = 0; i < count; i++) {
-    const eligibleTasks = tasks.filter((taskDef) => prerequisitesMet(taskDef.prerequisites, currentFacts))
+    const eligibleTasks = tasks.filter((taskDef) => prerequisitesMet(taskDef.prerequisites, currentFacts, data))
     if (eligibleTasks.length === 0) {
       console.warn('questEngine: no tasks match the current prerequisites/facts')
       break
