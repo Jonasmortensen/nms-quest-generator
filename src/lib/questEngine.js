@@ -212,6 +212,21 @@ function resolveIndirectFact(stateKey, property, facts, data) {
 }
 
 /**
+ * Returns the fact a prerequisite key is actually about: itself for a
+ * plain key ("hasFreighter"), or the part before the dot for a dotted
+ * key ("currentLocation.allowsTrade" is about the `currentLocation`
+ * fact, even though it checks a property on the row that fact points
+ * to, not the fact's own value). Shared by prerequisitesMet and
+ * preferTasksConsumingEffects so both agree on what a prerequisite key
+ * is "about", which matters because an effect only ever sets a plain
+ * fact key (e.g. `currentLocation`), never a dotted one.
+ */
+function factKeyFor(prerequisiteKey) {
+  const dotIndex = prerequisiteKey.indexOf('.')
+  return dotIndex === -1 ? prerequisiteKey : prerequisiteKey.slice(0, dotIndex)
+}
+
+/**
  * Returns true if every key/value pair in `prerequisites` matches.
  * A plain key (e.g. "hasFreighter") compares directly against `facts`.
  * A dotted key (e.g. "currentLocation.allowsTrade") instead checks a
@@ -231,11 +246,36 @@ export function prerequisitesMet(prerequisites, facts = {}, data = {}) {
       return facts[key] === expected
     }
 
-    const stateKey = key.slice(0, dotIndex)
     const property = key.slice(dotIndex + 1)
-    const actual = resolveIndirectFact(stateKey, property, facts, data)
+    const actual = resolveIndirectFact(factKeyFor(key), property, facts, data)
     return actual !== undefined && valuesMatch(actual, expected)
   })
+}
+
+/**
+ * Narrows `eligibleTasks` to whichever of them have a `prerequisites`
+ * key *about* one of `precedingEffectKeys` (via factKeyFor — so a
+ * dotted prerequisite like "currentLocation.allowsTrade" counts as
+ * being about `currentLocation`, matching an effect that set
+ * `currentLocation`, even though the two strings aren't equal), so a
+ * task that specifically reacts to what the previous objective just
+ * changed is preferred over one that's merely still eligible. Every
+ * task here is already known to satisfy its prerequisites (see
+ * generateQuestBatch), so checking key membership is enough — no need
+ * to re-check values. Falls back to the full `eligibleTasks` when
+ * nothing matches, or when there were no preceding effect keys to
+ * prefer (e.g. the first pick in a batch), so this never shrinks the
+ * pool to nothing.
+ */
+function preferTasksConsumingEffects(eligibleTasks, precedingEffectKeys) {
+  if (precedingEffectKeys.length === 0) return eligibleTasks
+
+  const preferred = eligibleTasks.filter((taskDef) => {
+    const prerequisiteKeys = taskDef.prerequisites ? Object.keys(taskDef.prerequisites) : []
+    return prerequisiteKeys.some((key) => precedingEffectKeys.includes(factKeyFor(key)))
+  })
+
+  return preferred.length > 0 ? preferred : eligibleTasks
 }
 
 /**
@@ -256,14 +296,22 @@ export function prerequisitesMet(prerequisites, facts = {}, data = {}) {
  * objective changing something (e.g. its `effects` set
  * `currentLocation`) is reflected in which tasks are eligible for the
  * objective that follows it — the batch reads as one continuous,
- * locally-consistent sequence rather than five independent picks. If a
- * step finds no eligible tasks (including the very first), generation
- * stops there with a console warning and whatever was already
- * generated is returned, so the batch can come back shorter than
- * `count` rather than crashing or discarding valid earlier objectives.
+ * locally-consistent sequence rather than five independent picks.
+ * Beyond just being eligible, a task whose own `prerequisites` key on
+ * one of the keys the previous objective's `effects` just set is
+ * preferred over one that doesn't (see preferTasksConsumingEffects) —
+ * so "Buy a settlement chart" (effects: hasSettlementChart) is
+ * followed by "Use the settlement chart..." (prerequisites:
+ * hasSettlementChart) whenever that task is eligible, rather than some
+ * unrelated task that merely happens to also be eligible. If a step
+ * finds no eligible tasks (including the very first), generation stops
+ * there with a console warning and whatever was already generated is
+ * returned, so the batch can come back shorter than `count` rather than
+ * crashing or discarding valid earlier objectives.
  */
 export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
   let currentFacts = facts
+  let precedingEffectKeys = []
   const batch = []
 
   for (let i = 0; i < count; i++) {
@@ -273,7 +321,8 @@ export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
       break
     }
 
-    const taskDef = eligibleTasks[Math.floor(Math.random() * eligibleTasks.length)]
+    const candidateTasks = preferTasksConsumingEffects(eligibleTasks, precedingEffectKeys)
+    const taskDef = candidateTasks[Math.floor(Math.random() * candidateTasks.length)]
     const resolutions = {}
     const text = resolveTemplate(taskDef.task, data, { record: resolutions })
     const effects = resolveEffects(taskDef.effects, data, resolutions)
@@ -284,6 +333,7 @@ export function generateQuestBatch(tasks, data, count = 5, facts = {}) {
       effects,
     })
     currentFacts = { ...currentFacts, ...effects }
+    precedingEffectKeys = Object.keys(effects)
   }
 
   return batch

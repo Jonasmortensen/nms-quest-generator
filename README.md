@@ -59,10 +59,26 @@ npm test
   picked from tasks whose `prerequisites` match *that* location, not
   whatever the player's location was when "Generate 5 New" was clicked —
   the batch reads as one locally-consistent sequence rather than five
-  independent rolls. If a step ever finds no eligible tasks, generation
-  stops there (with a console warning) and whatever was already
-  generated is returned, so a batch can come back shorter than 5 rather
-  than crashing or discarding valid earlier objectives.
+  independent rolls. Beyond just eligibility, a task whose own
+  `prerequisites` reference one of the keys the previous objective's
+  `effects` just set is *preferred* over an eligible task that doesn't
+  (see `preferTasksConsumingEffects`): so after "Buy a settlement chart"
+  (`effects: { hasSettlementChart: true }`), "Use the settlement
+  chart..." (`prerequisites: { hasSettlementChart: true }`) is chosen
+  over some other unrelated task that merely happens to also be
+  eligible — the pool only widens back out to every eligible task when
+  nothing available actually follows up on what just changed. This
+  preference also recognizes a **dotted** prerequisite as being about
+  the fact before the dot (via `factKeyFor`, shared with
+  `prerequisitesMet`): a task with `prerequisites: {
+  "currentLocation.allowsTrade": true }` is preferred right after an
+  effect sets `currentLocation`, even though `"currentLocation"` and
+  `"currentLocation.allowsTrade"` aren't the same string — comparing
+  the raw keys directly would silently never match. If a step ever
+  finds no eligible tasks, generation stops there (with a console
+  warning) and whatever was already generated is returned, so a batch
+  can come back shorter than 5 rather than crashing or discarding valid
+  earlier objectives.
 - `src/hooks/useQuestGenerator.js` wraps the engine in a hook that holds
   a batch of 5 quests in state and exposes `regenerate()`. It takes the
   current player state as an argument so regenerating always respects

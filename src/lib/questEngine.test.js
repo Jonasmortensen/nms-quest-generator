@@ -265,6 +265,62 @@ describe('generateQuestBatch', () => {
     warnSpy.mockRestore()
   })
 
+  it('prefers a task that has the preceding effect as a prerequisite over other eligible tasks', () => {
+    const tasksWithChoice = [
+      { task: 'Buy a settlement chart', prerequisites: {}, effects: { hasSettlementChart: true } },
+      { task: 'Use the settlement chart', prerequisites: { hasSettlementChart: true }, effects: {} },
+      { task: 'Do something unrelated', prerequisites: {}, effects: {} },
+    ]
+    // Step 1 has two equally-eligible, effect-free tasks to choose
+    // between ("Buy a settlement chart" and "Do something unrelated");
+    // force that pick so the test is deterministic. Step 2 needs no
+    // mocking: once "Buy a settlement chart"'s effect has fired, only
+    // "Use the settlement chart" has a prerequisite referencing it, so
+    // preference narrows the pool to just that one task regardless of
+    // the random value drawn.
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0)
+    const batch = generateQuestBatch(tasksWithChoice, data, 2)
+    expect(batch[0].text).toBe('Buy a settlement chart')
+    expect(batch[1].text).toBe('Use the settlement chart')
+    vi.restoreAllMocks()
+  })
+
+  it('prefers a task with a dotted prerequisite that is about the fact an effect just set', () => {
+    // A single location keeps "[location]" deterministic once step 1's
+    // task-pick is forced, so the whole sequence needs no further mocking.
+    const singleLocationData = {
+      items: [],
+      locations: [{ name: 'space_station', allowsTrade: true, hasNpcPilots: true }],
+    }
+    const tasksWithDottedFollowUp = [
+      { task: 'Go to [location]', prerequisites: {}, effects: { currentLocation: '[location]' } },
+      { task: 'Negotiate a bulk discount', prerequisites: { 'currentLocation.allowsTrade': true }, effects: {} },
+      { task: 'Do something unrelated', prerequisites: {}, effects: {} },
+    ]
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0) // step 1: pick "Go to [location]" over "Do something unrelated"
+    const batch = generateQuestBatch(tasksWithDottedFollowUp, singleLocationData, 2)
+    expect(batch[0].text).toBe('Go to space_station')
+    // "Negotiate a bulk discount"'s prerequisite is the dotted key
+    // "currentLocation.allowsTrade", not a plain "currentLocation" key —
+    // it should still be recognized as being about the `currentLocation`
+    // fact that step 1's effect just set, and preferred over "Do
+    // something unrelated" (also eligible, but unrelated).
+    expect(batch[1].text).toBe('Negotiate a bulk discount')
+    vi.restoreAllMocks()
+  })
+
+  it('falls back to the full eligible pool when no task prefers the preceding effect', () => {
+    const tasksWithNoFollowUp = [
+      { task: 'Requisition a freighter', prerequisites: {}, effects: { hasFreighter: true } },
+      { task: 'Scan a curiosity', prerequisites: {}, effects: {} },
+    ]
+    const batch = generateQuestBatch(tasksWithNoFollowUp, data, 5)
+    expect(batch).toHaveLength(5)
+    batch.forEach((quest) => {
+      expect(['Requisition a freighter', 'Scan a curiosity']).toContain(quest.text)
+    })
+  })
+
   it('stops early and returns a partial batch when a later step has no eligible tasks', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const deadEndTasks = [

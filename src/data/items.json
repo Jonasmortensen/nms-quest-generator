@@ -14,7 +14,7 @@
   { "name": "Magnetised Ferrite", "rarity": "uncommon", "type": "product", "tags": ["refined"] },
   { "name": "Ionised Cobalt", "rarity": "uncommon", "type": "product", "tags": ["refined"] },
   { "name": "Living Glass", "rarity": "rare", "type": "product", "tags": ["craftable"] },
-  { "name": "Cryo-Pearl", "rarity": "rare", "type": "product", "tags": ["craftable"] },
+  { "name": "Living Pearl", "rarity": "rare", "type": "item", "tags": ["found"] },
   { "name": "Gold", "rarity": "rare", "type": "mineral", "tags": [] },
   { "name": "Platinum", "rarity": "rare", "type": "mineral", "tags": [] },
   { "name": "Chromatic Metal", "rarity": "rare", "type": "product", "tags": ["craftable"] },
@@ -33,5 +33,6 @@
   { "name": "Pulse Engine Upgrade", "rarity": "rare", "type": "technology", "tags": ["craftable"] },
   { "name": "Photon Cannon Upgrade", "rarity": "rare", "type": "technology", "tags": ["craftable"] },
   { "name": "Bipedal", "rarity": "common", "type": "fauna", "tags": ["scannable"] },
-  { "name": "Beacon", "rarity": "common", "type": "building", "tags": [] }
+  { "name": "Beacon", "rarity": "common", "type": "building", "tags": [] },
+  { "name": "settlement_chart", "rarity": "common", "type": "item", "tags": ["bought"] }
 ]

@@ -5,14 +5,14 @@
     "effects": {}
   },
   {
-    "task": "Negotiate a bulk trade discount with the local merchant",
+    "task": "Buy as many trade goods as you can afford",
     "prerequisites": { "currentLocation.allowsTrade": true },
-    "effects": {}
+    "effects": {"hasTradeGoods" : true}
   },
   {
     "task": "Craft [1-5] [item?tags=craftable]",
     "prerequisites": {},
-    "effects": {}
+    "effects": {"hasCraftedItem" : true}
   },
   {
     "task": "Scan [3-6] [item?tags=scannable] found in the wild",
@@ -30,18 +30,8 @@
     "effects": {}
   },
   {
-    "task": "Install a [item?type=technology] upgrade",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
-    "task": "Visit [location?hasNpcPilots=true] and speak with a visiting pilot",
-    "prerequisites": {},
-    "effects": {"currentLocation" : "[location?hasNpcPilots=true]"}
-  },
-  {
-    "task": "Bring [item?type=technology] to an engineer stationed at [location?allowsTrade=true]",
-    "prerequisites": {},
+    "task": "Bring the crafted item to [location?allowsTrade=true] and sell it",
+    "prerequisites": {"hasCraftedItem": true},
     "effects": {"currentLocation" : "[location?allowsTrade=true]"}
   },
   {
@@ -62,5 +52,20 @@
   {
     "task": "Talk to the fleet commander",
     "prerequisites": { "currentLocation": "freighter" }
+  },
+  {
+    "task": "Buy a settlement chart",
+    "prerequisites": {"currentLocation": "space_station"},
+    "effects": {"hasSettlementChart": true}
+  },
+  {
+    "task": "Use the settlement chart, and go to the settlement",
+    "prerequisites": {"hasSettlementChart": true},
+    "effects": {"currentLocation": "foreign_settlement"}
+  },
+  {
+    "task": "Find a [item&tags=found]",
+    "prerequisites": {},
+    "effects": {"hasRareItem": true}
   }
 ]
