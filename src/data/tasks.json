@@ -35,11 +35,6 @@
     "effects": {"currentLocation" : "[location?hasNpcPilots=true]"}
   },
   {
-    "task": "Recover [1-2] [item?rarity=exotic]",
-    "prerequisites": {},
-    "effects": {}
-  },
-  {
     "task": "Bring [item?type=technology] to an engineer stationed at [location?allowsTrade=true]",
     "prerequisites": {},
     "effects": {"currentLocation" : "[location?allowsTrade=true]"}

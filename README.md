@@ -256,7 +256,15 @@ update the `manifest.icons` entries in `vite.config.js` if you rename
 them.
 
 After the first visit, built assets are cached by the service worker so
-the app keeps working offline.
+the app keeps working offline. The two display fonts (Orbitron for
+headings/buttons/labels, Rajdhani for body text) are loaded from Google
+Fonts via `<link>` tags in `index.html`, not bundled — the service
+worker's precache only covers same-origin build output, so those
+specific font requests aren't guaranteed to be cached for offline use.
+The browser's own font cache often covers repeat visits anyway, and
+both font stacks fall back to system sans-serif, so the app still reads
+fine if the fonts don't load; if strict offline correctness matters
+more than the extra network request, self-host the font files instead.
 
 ## Extending
 
